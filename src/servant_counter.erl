@@ -9,7 +9,7 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([start_link/0, stop/0, getnew/0]).
+-export([start_link/0, stop/0, next/0]).
 
 start_link()->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
@@ -17,8 +17,8 @@ start_link()->
 stop()->
     gen_server:call(?SERVER, stop).
 
-getnew()->
-    gen_server:call(?SERVER,getnew).
+next()->
+    gen_server:call(?SERVER, next).
 
 %% ====================================================================
 %% Behavioural functions 
@@ -39,7 +39,7 @@ init([]) ->
 %% ====================================================================
 handle_call(stop, _From, State) ->
     {stop, normal, ok, State};
-handle_call(getnew, _From, State = #state{nextval=Next})->
+handle_call(next, _From, State = #state{nextval=Next})->
     NewNext = Next + 1,
     NewState = State#state{nextval=NewNext},
     {reply, {ok, Next}, NewState};
@@ -101,11 +101,11 @@ start_stop_test() ->
 
 counter_test()->
     {ok, _Pid} = start_link(),
-    ?assertEqual({ok, 1}, getnew()),
-    ?assertEqual({ok, 2}, getnew()),
+    ?assertEqual({ok, 1}, next()),
+    ?assertEqual({ok, 2}, next()),
     ok = stop(),
     {ok, _Pid2} = start_link(),
-    ?assertEqual({ok, 1}, getnew()),
+    ?assertEqual({ok, 1}, next()),
     ok = stop().
 
 %-endif.

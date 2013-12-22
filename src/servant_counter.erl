@@ -6,6 +6,11 @@
 -define(SERVER, ?MODULE).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
+
+-ifndef(TEST).
+-define(TEST, 1).
+-endif.
+
 %% ====================================================================
 %% API functions
 %% ====================================================================
@@ -89,7 +94,7 @@ code_change(OldVsn, State, _Extra) ->
 %% Tests
 %% ====================================================================
 
-%-ifdef(TEST).
+-ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
 
 start_stop_test() ->
@@ -108,4 +113,4 @@ counter_test()->
     ?assertEqual({ok, 1}, next()),
     ok = stop().
 
-%-endif.
+-endif.

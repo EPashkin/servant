@@ -45,8 +45,10 @@ init([]) ->
 handle_call(stop, _From, State) ->
     {stop, normal, ok, State};
 handle_call({addtask, Text, Code}, _From, State=#state{list=List}) ->
+    Pred =fun (#taskinfo{code=ItemCode}) -> ItemCode /= Code end,
+    ListWithoutCode = lists:filter(Pred, List),
     Info = #taskinfo{text=Text, code=Code},
-    NewList = [Info|List],
+    NewList = [Info|ListWithoutCode],
     {reply, ok, State#state{list=NewList}};
 handle_call(getForMenu, _From, State=#state{list=List}) ->
     ReplyList = [{TaskInfo#taskinfo.text, TaskInfo#taskinfo.code}
@@ -118,12 +120,20 @@ add_test_() ->
              ok = stop()
      end,
      [
-      fun(_) ->
-              [?_assertEqual(ok, addtask("Text1", code1)),
-               ?_assertEqual({ok, [{"Text1", code1}]}, getForMenu()),              
-               ?_assertEqual(ok, addtask("Text2", code2)),
-               ?_assertEqual({ok, [{"Text1", code1},
-                                   {"Text2", code2}]}, getForMenu())]
+      fun(_) -> [
+                 ?_assertEqual(ok, addtask("Text1", code1)),
+                 ?_assertEqual({ok, [{"Text1", code1}]}, getForMenu()),              
+                 ?_assertEqual(ok, addtask("Text2", code2)),
+                 ?_assertEqual({ok, [{"Text1", code1},
+                                     {"Text2", code2}]}, getForMenu())
+                ]
+      end,
+      %check replace items with duplicate code,
+      fun(_) -> [
+                 ?_assertEqual(ok, addtask("Text1", code1)),
+                 ?_assertEqual(ok, addtask("Text2", code1)),
+                 ?_assertEqual({ok, [{"Text2", code1}]}, getForMenu())
+                ]              
       end
      ]
     }.

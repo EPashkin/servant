@@ -28,7 +28,7 @@ getForMenu() ->
 %% Behavioural functions 
 %% ====================================================================
 -record(state, {list=[]}).
--record(taskinfo,{id,text,code}).
+-record(taskinfo,{text,code}).
 
 %% init/1
 %% ====================================================================
@@ -45,12 +45,11 @@ init([]) ->
 handle_call(stop, _From, State) ->
     {stop, normal, ok, State};
 handle_call({addtask, Text, Code}, _From, State=#state{list=List}) ->
-    {ok, Id} = servant_counter:next(),
-    Info = #taskinfo{id=Id, text=Text, code=Code},
+    Info = #taskinfo{text=Text, code=Code},
     NewList = [Info|List],
     {reply, ok, State#state{list=NewList}};
 handle_call(getForMenu, _From, State=#state{list=List}) ->
-    ReplyList = [{TaskInfo#taskinfo.id, TaskInfo#taskinfo.text, TaskInfo#taskinfo.code}
+    ReplyList = [{TaskInfo#taskinfo.text, TaskInfo#taskinfo.code}
                  || TaskInfo <- List],
     {reply, {ok, lists:reverse(ReplyList)}, State};
 handle_call(_Request, _From, State) ->
@@ -113,20 +112,18 @@ add_test_() ->
     {
      foreach,
      fun() ->
-             {ok, _PidC} = servant_counter:start_link(), 
              {ok, _Pid} = start_link()
      end,
      fun(_) -> 
-             ok = stop(),
-             servant_counter:stop()
+             ok = stop()
      end,
      [
       fun(_) ->
               [?_assertEqual(ok, addtask("Text1", code1)),
-               ?_assertMatch({ok, [{_Id1,"Text1", code1}]}, getForMenu()),              
+               ?_assertEqual({ok, [{"Text1", code1}]}, getForMenu()),              
                ?_assertEqual(ok, addtask("Text2", code2)),
-               ?_assertMatch({ok, [{_Id1,"Text1", code1},
-                                   {_Id2,"Text2", code2}]}, getForMenu())]
+               ?_assertEqual({ok, [{"Text1", code1},
+                                   {"Text2", code2}]}, getForMenu())]
       end
      ]
     }.

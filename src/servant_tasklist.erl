@@ -10,6 +10,7 @@
 %% API functions
 %% ====================================================================
 -export([start_link/0, stop/0]).
+-export([addtask/2, getForMenu/0]).
 
 start_link()->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
@@ -17,10 +18,17 @@ start_link()->
 stop()->
     gen_server:call(?SERVER, stop).
 
+addtask(Text,Code) ->
+    gen_server:call(?SERVER, {addtask, Text, Code}).
+
+getForMenu() ->
+    gen_server:call(?SERVER, getForMenu).
+
 %% ====================================================================
 %% Behavioural functions 
 %% ====================================================================
--record(state, {}).
+-record(state, {list=[]}).
+-record(taskinfo,{id,text,code}).
 
 %% init/1
 %% ====================================================================
@@ -36,6 +44,15 @@ init([]) ->
 %% ====================================================================
 handle_call(stop, _From, State) ->
     {stop, normal, ok, State};
+handle_call({addtask, Text, Code}, _From, State=#state{list=List}) ->
+    {ok, Id} = servant_counter:next(),
+    Info = #taskinfo{id=Id, text=Text, code=Code},
+    NewList = [Info|List],
+    {reply, ok, State#state{list=NewList}};
+handle_call(getForMenu, _From, State=#state{list=List}) ->
+    ReplyList = [{TaskInfo#taskinfo.id, TaskInfo#taskinfo.text, TaskInfo#taskinfo.code}
+                 || TaskInfo <- List],
+    {reply, {ok, lists:reverse(ReplyList)}, State};
 handle_call(_Request, _From, State) ->
     Reply = {error, bad_request},
     {reply, Reply, State}.
@@ -91,5 +108,27 @@ start_stop_test() ->
     ok = stop(),
     io:format("~p~n", [whereis(?SERVER)]),
     ?assert(undefined == whereis(?SERVER)).
+
+add_test_() ->
+    {
+     foreach,
+     fun() ->
+             {ok, _PidC} = servant_counter:start_link(), 
+             {ok, _Pid} = start_link()
+     end,
+     fun(_) -> 
+             ok = stop(),
+             servant_counter:stop()
+     end,
+     [
+      fun(_) ->
+              [?_assertEqual(ok, addtask("Text1", code1)),
+               ?_assertMatch({ok, [{_Id1,"Text1", code1}]}, getForMenu()),              
+               ?_assertEqual(ok, addtask("Text2", code2)),
+               ?_assertMatch({ok, [{_Id1,"Text1", code1},
+                                   {_Id2,"Text2", code2}]}, getForMenu())]
+      end
+     ]
+    }.
 
 %-endif.

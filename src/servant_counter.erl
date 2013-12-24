@@ -3,13 +3,8 @@
 
 -module(servant_counter).
 -behaviour(gen_server).
--define(SERVER, ?MODULE).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
-
-
--ifndef(TEST).
--define(TEST, 1).
--endif.
+-define(SERVER, ?MODULE).
 
 %% ====================================================================
 %% API functions
@@ -82,7 +77,7 @@ terminate(_Reason, _State) ->
 %% @doc <a href="http://www.erlang.org/doc/man/gen_server.html#Module:code_change-3">gen_server:code_change/3</a>
 %% ====================================================================
 code_change(OldVsn, State, _Extra) ->
-    io:format("code_change: ~p~n", [OldVsn]),
+    io:format("~p code_change: ~p~n", [?MODULE, OldVsn]),
     {ok, State}.
 
 
@@ -94,7 +89,7 @@ code_change(OldVsn, State, _Extra) ->
 %% Tests
 %% ====================================================================
 
--ifdef(TEST).
+%-ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
 
 start_stop_test() ->
@@ -113,4 +108,4 @@ counter_test()->
     ?assertEqual({ok, 1}, next()),
     ok = stop().
 
--endif.
+%-endif.

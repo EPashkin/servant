@@ -45,10 +45,12 @@ init([]) ->
 handle_call(stop, _From, State) ->
     {stop, normal, ok, State};
 handle_call({addtask, Text, Code}, _From, State=#state{list=List}) ->
-    Pred =fun (#taskinfo{code=ItemCode}) -> ItemCode /= Code end,
-    ListWithoutCode = lists:filter(Pred, List),
-    Info = #taskinfo{text=Text, code=Code},
-    NewList = [Info|ListWithoutCode],
+    Pred = fun (#taskinfo{code=ItemCode}) -> ItemCode == Code end,
+    NewList = case lists:any(Pred, List) of
+                  true -> List;
+                  false->Info = #taskinfo{text=Text, code=Code},
+                         [Info|List]
+              end,
     {reply, ok, State#state{list=NewList}};
 handle_call(getForMenu, _From, State=#state{list=List}) ->
     ReplyList = [{TaskInfo#taskinfo.text, TaskInfo#taskinfo.code}
@@ -128,11 +130,16 @@ add_test_() ->
                                      {"Text2", code2}]}, getForMenu())
                 ]
       end,
-      %check replace items with duplicate code,
+      %check not add items with same code
       fun(_) -> [
                  ?_assertEqual(ok, addtask("Text1", code1)),
                  ?_assertEqual(ok, addtask("Text2", code1)),
-                 ?_assertEqual({ok, [{"Text2", code1}]}, getForMenu())
+                 ?_assertEqual({ok, [{"Text1", code1}]}, getForMenu()),
+                 %check that list not reordered
+                 ?_assertEqual(ok, addtask("Text3", code3)),
+                 ?_assertEqual(ok, addtask("Text4", code1)),
+                 ?_assertEqual({ok, [{"Text1", code1},
+                                     {"Text3", code3}]}, getForMenu())
                 ]              
       end
      ]

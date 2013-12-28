@@ -10,7 +10,7 @@
 %% API functions
 %% ====================================================================
 -export([start_link/0, stop/0]).
--export([addtask/2, getForMenu/0]).
+-export([addtask/2, getForMenu/0, doFromMenu/1]).
 
 start_link()->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
@@ -23,6 +23,10 @@ addtask(Text,Code) ->
 
 getForMenu() ->
     gen_server:call(?SERVER, getForMenu).
+
+doFromMenu(Code) ->
+    io:format("~p~n",[Code]),
+    unknown_code.
 
 %% ====================================================================
 %% Behavioural functions 
@@ -141,6 +145,12 @@ add_test_() ->
                  ?_assertEqual({ok, [{"Text1", code1},
                                      {"Text3", code3}]}, getForMenu())
                 ]              
+      end,
+      fun(_)->[
+               ?_assertEqual(unknown_code, doFromMenu(code1)),
+               ?_assertEqual(ok, addtask("Text1", code1)),
+               ?_assertEqual(ok, doFromMenu(code1))
+              ]
       end
      ]
     }.

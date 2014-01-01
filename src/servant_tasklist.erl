@@ -25,8 +25,7 @@ getForMenu() ->
     gen_server:call(?SERVER, getForMenu).
 
 doFromMenu(Code) ->
-    io:format("~p~n",[Code]),
-    unknown_code.
+    gen_server:call(?SERVER, {doFromMenu, Code}).
 
 %% ====================================================================
 %% Behavioural functions 
@@ -60,6 +59,13 @@ handle_call(getForMenu, _From, State=#state{list=List}) ->
     ReplyList = [{TaskInfo#taskinfo.text, TaskInfo#taskinfo.code}
                  || TaskInfo <- List],
     {reply, {ok, lists:reverse(ReplyList)}, State};
+handle_call({doFromMenu,Code}, _From, State=#state{list=List}) ->
+    Reply = case find_by_code(Code, List) of
+                false -> unknown_code;
+                %todo: do work in this task                
+                #taskinfo{} -> ok    
+            end,
+    {reply, Reply, State};
 handle_call(_Request, _From, State) ->
     Reply = {error, bad_request},
     {reply, Reply, State}.
@@ -101,6 +107,8 @@ code_change(OldVsn, State, _Extra) ->
 %% ====================================================================
 %% Internal functions
 %% ====================================================================
+find_by_code(Code, List) ->
+    lists:keyfind(Code, #taskinfo.code, List).
 
 %% ====================================================================
 %% Tests

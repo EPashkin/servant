@@ -13,11 +13,17 @@
 %% ====================================================================
 %% Internal functions
 %% ====================================================================
+
+%% ====================================================================
+%% @doc Check directory to contains only archive with same name
+%% ====================================================================
 contains_only_archive(Dir) ->
+    DirName = filename:basename(Dir),
     Files = filelib:wildcard("*", Dir),  
     Func = fun (_, false) -> false;
               (FileName, _Acc) ->
-                   case is_file_archive(FileName) of
+                   case is_file_archive(FileName) and
+                            (filename:rootname(FileName) == DirName) of
                        false -> false;
                        true -> true
                    end
@@ -64,8 +70,13 @@ contains_only_archive_test_() ->
      [
       fun(_) ->
               meck:expect(filelib, wildcard,  
-                          fun ("*", _)-> ["test.rar"] end),
+                          fun ("*", _)-> ["test1.rar"] end),
               ?_assert(contains_only_archive("basedir/test1"))
+      end,
+      fun(_) ->
+              meck:expect(filelib, wildcard,  
+                          fun ("*", _)-> ["test.rar"] end),
+              ?_assertNot(contains_only_archive("basedir/test1b"))
       end,
       fun(_) ->
               meck:expect(filelib, wildcard,  

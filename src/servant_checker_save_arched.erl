@@ -19,7 +19,7 @@
 %% ====================================================================
 contains_only_archive(Dir) ->
     DirName = filename:basename(Dir),
-    Files = servant_util:get_dir_files(Dir),
+    {ok, Files} = servant_file_proxy:list_dir_all(Dir),
     Func = fun (_, false) -> false;
               (FileName, _Acc) ->
                    case is_file_archive(FileName) and
@@ -60,42 +60,42 @@ contains_only_archive_test_() ->
     {
      foreach,
      fun() ->
-             meck:new(servant_util),
+             meck:new(servant_file_proxy),
              ok
      end,
      fun(_) -> 
-             true = meck:validate(servant_util),
-             meck:unload(servant_util)
+             true = meck:validate(servant_file_proxy),
+             meck:unload(servant_file_proxy)
      end,
      [
       fun(_) ->
-              meck:expect(servant_util, get_dir_files,
-                          fun (_) -> ["test1.rar"] end),
+              meck:expect(servant_file_proxy, list_dir_all,
+                          fun (_) -> {ok, ["test1.rar"]} end),
               ?_assert(contains_only_archive("basedir/test1"))
       end,
       fun(_) ->
-              meck:expect(servant_util, get_dir_files,
-                          fun (_)-> ["test.rar"] end),
+              meck:expect(servant_file_proxy, list_dir_all,
+                          fun (_)-> {ok, ["test.rar"]} end),
               ?_assertNot(contains_only_archive("basedir/test1b"))
       end,
       fun(_) ->
-              meck:expect(servant_util, get_dir_files,
-                          fun (_)-> ["dir", "test.rar"] end),
+              meck:expect(servant_file_proxy, list_dir_all,
+                          fun (_)-> {ok, ["dir", "test.rar"]} end),
               ?_assertNot(contains_only_archive("basedir/test2"))
       end,
       fun(_) ->
-              meck:expect(servant_util, get_dir_files,
-                          fun (_)-> ["dir", "test"] end),
+              meck:expect(servant_file_proxy, list_dir_all,
+                          fun (_)-> {ok, ["dir", "test"]} end),
               ?_assertNot(contains_only_archive("basedir/test3"))
       end,
       fun(_) ->
-              meck:expect(servant_util, get_dir_files,
-                          fun (_)-> ["test.rar", "file"] end),
+              meck:expect(servant_file_proxy, list_dir_all,
+                          fun (_)-> {ok, ["test.rar", "file"]} end),
               ?_assertNot(contains_only_archive("basedir/test4"))
       end,
       fun(_) ->
-              meck:expect(servant_util, get_dir_files,
-                          fun (_)-> [] end),
+              meck:expect(servant_file_proxy, list_dir_all,
+                          fun (_)-> {ok, []} end),
               ?_assertNot(contains_only_archive("basedir/test5"))
       end
      ]

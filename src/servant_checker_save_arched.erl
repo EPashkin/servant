@@ -15,6 +15,20 @@
 %% ====================================================================
 
 %% ====================================================================
+%% @doc Return list of subdirectories
+%% ====================================================================
+list_dir_subdirs(Dir) ->
+    {ok, Files} = servant_file_proxy:list_dir_all(Dir),
+    Func = fun(SubDir) ->
+                   FullDir = filename:join(Dir, SubDir),
+                   case filelib:is_dir(FullDir) of
+                       true -> {true, FullDir};
+                       false -> false
+                   end
+           end,
+    lists:filtermap(Func, Files).
+
+%% ====================================================================
 %% @doc Check directory to contains only archive with same name
 %% ====================================================================
 contains_only_archive(Dir) ->
@@ -63,7 +77,7 @@ contains_only_archive_test_() ->
              meck:new(servant_file_proxy),
              ok
      end,
-     fun(_) -> 
+     fun(_) ->
              true = meck:validate(servant_file_proxy),
              meck:unload(servant_file_proxy)
      end,
@@ -97,6 +111,33 @@ contains_only_archive_test_() ->
               meck:expect(servant_file_proxy, list_dir_all,
                           fun (_)-> {ok, []} end),
               ?_assertNot(contains_only_archive("basedir/test5"))
+      end
+     ]
+    }.
+
+list_dir_subdirs_test_() ->
+    {
+     foreach,
+     fun() ->
+             meck:new(servant_file_proxy),
+             meck:new(filelib, [unstick]),
+             ok
+     end,
+     fun(_) ->
+             true = meck:validate(filelib),
+             meck:unload(filelib),
+             true = meck:validate(servant_file_proxy),
+             meck:unload(servant_file_proxy)
+     end,
+     [
+      fun(_) ->
+              meck:expect(servant_file_proxy, list_dir_all,
+                          fun (_) -> {ok, ["file1", "file2", "dir1", "dir2"]} end),
+              meck:expect(filelib, is_dir,
+                          fun ("basedir/dir1") -> true;
+                             ("basedir/dir2") -> true;
+                             (_) -> false end),
+              ?_assertEqual(["basedir/dir1", "basedir/dir2"], list_dir_subdirs("basedir"))
       end
      ]
     }.

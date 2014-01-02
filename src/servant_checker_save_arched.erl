@@ -19,7 +19,7 @@
 %% ====================================================================
 contains_only_archive(Dir) ->
     DirName = filename:basename(Dir),
-    Files = filelib:wildcard("*", Dir),  
+    Files = servant_util:get_dir_files(Dir),
     Func = fun (_, false) -> false;
               (FileName, _Acc) ->
                    case is_file_archive(FileName) and
@@ -60,42 +60,42 @@ contains_only_archive_test_() ->
     {
      foreach,
      fun() ->
-             meck:new(filelib, [unstick]),
+             meck:new(servant_util),
              ok
      end,
      fun(_) -> 
-             true = meck:validate(filelib),
-             meck:unload(filelib)
+             true = meck:validate(servant_util),
+             meck:unload(servant_util)
      end,
      [
       fun(_) ->
-              meck:expect(filelib, wildcard,  
-                          fun ("*", _)-> ["test1.rar"] end),
+              meck:expect(servant_util, get_dir_files,
+                          fun (_) -> ["test1.rar"] end),
               ?_assert(contains_only_archive("basedir/test1"))
       end,
       fun(_) ->
-              meck:expect(filelib, wildcard,  
-                          fun ("*", _)-> ["test.rar"] end),
+              meck:expect(servant_util, get_dir_files,
+                          fun (_)-> ["test.rar"] end),
               ?_assertNot(contains_only_archive("basedir/test1b"))
       end,
       fun(_) ->
-              meck:expect(filelib, wildcard,  
-                          fun ("*", _)-> ["dir", "test.rar"] end),
+              meck:expect(servant_util, get_dir_files,
+                          fun (_)-> ["dir", "test.rar"] end),
               ?_assertNot(contains_only_archive("basedir/test2"))
       end,
       fun(_) ->
-              meck:expect(filelib, wildcard,  
-                          fun ("*", _)-> ["dir", "test"] end),
+              meck:expect(servant_util, get_dir_files,
+                          fun (_)-> ["dir", "test"] end),
               ?_assertNot(contains_only_archive("basedir/test3"))
       end,
       fun(_) ->
-              meck:expect(filelib, wildcard,  
-                          fun ("*", _)-> ["test.rar", "file"] end),
+              meck:expect(servant_util, get_dir_files,
+                          fun (_)-> ["test.rar", "file"] end),
               ?_assertNot(contains_only_archive("basedir/test4"))
       end,
       fun(_) ->
-              meck:expect(filelib, wildcard,  
-                          fun ("*", _)-> [] end),
+              meck:expect(servant_util, get_dir_files,
+                          fun (_)-> [] end),
               ?_assertNot(contains_only_archive("basedir/test5"))
       end
      ]

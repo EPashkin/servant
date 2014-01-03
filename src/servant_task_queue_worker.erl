@@ -58,7 +58,7 @@ handle_info(init, not_inited) ->
     servant_task_queue_manager:get_task(self()),
     {noreply, #state{}};
 handle_info({task, #taskinfo{code=Code, module=Module}}, State) ->
-    ok = erlang:apply(Module, process_task, [Code, fun servant:add_confirmation/2]),
+    ok = erlang:apply(Module, process_task, [Code, fun servant:add_confirmation/3]),
     servant_task_queue_manager:get_task(self()),
     {noreply, State};
 handle_info(_Info, State) ->

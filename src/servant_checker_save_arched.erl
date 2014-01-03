@@ -17,7 +17,7 @@ process_task({check_save_arched, Dir}, AddTaskFunc) ->
                        true -> DirName = filename:basename(SubDir),
                                IOList = io_lib:format("Move from subfolder archive ~s", [DirName]),
                                Text = lists:flatten(IOList),
-                               AddTaskFunc(Text, {do_save_arched, SubDir})
+                               AddTaskFunc(Text, {do_save_arched, SubDir}, ?MODULE)
                    end
            end,
     lists:foreach(Func, SubDirs),
@@ -174,7 +174,7 @@ process_task_check_save_arched_test_() ->
                             ("basedir/dir2") -> true;
                             (_) -> false end),
              meck:expect(servant_file_proxy, test_func,
-                         fun (_Text, _Code) -> ok end),
+                         fun (_Text, _Code, _Module) -> ok end),
              ok
      end,
      fun(_) ->
@@ -186,9 +186,9 @@ process_task_check_save_arched_test_() ->
      end,
      [
       ?_assertEqual(ok, process_task({check_save_arched, "basedir"}
-                                     , fun servant_file_proxy:test_func/2)),
-      ?_assert(meck:called(servant_file_proxy, test_func, ['_' , {do_save_arched, "basedir/dir1"}])),
-      ?_assertNot(meck:called(servant_file_proxy, test_func, ['_' , {do_save_arched, "basedir/dir2"}]))
+                                     , fun servant_file_proxy:test_func/3)),
+      ?_assert(meck:called(servant_file_proxy, test_func, ['_' , {do_save_arched, "basedir/dir1"}, ?MODULE])),
+      ?_assertNot(meck:called(servant_file_proxy, test_func, ['_' , {do_save_arched, "basedir/dir2"}, '_']))
      ]
     }.
 

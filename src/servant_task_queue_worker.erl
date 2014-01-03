@@ -57,8 +57,13 @@ handle_cast(_Msg, State) ->
 handle_info(init, not_inited) ->
     servant_task_queue_manager:get_task(self()),
     {noreply, #state{}};
-handle_info({task, #taskinfo{code=Code, module=Module}}, State) ->
-    ok = erlang:apply(Module, process_task, [Code]),
+handle_info({task, #taskinfo{code=Code, module=Module}=Task}, State) ->
+    Reply = erlang:apply(Module, process_task, [Code]),
+    case Reply of
+        {timeout, Time} ->
+            servant_task_queue_manager:in_after(Time, Task);
+        ok -> true
+    end,
     servant_task_queue_manager:get_task(self()),
     {noreply, State};
 handle_info(_Info, State) ->
@@ -117,13 +122,47 @@ task_test() ->
                 end),
     
     {ok, Pid} = start_link(),
-    
     Result = receive
                  {code, Code} -> {ok, Code}
              after
                      1000 -> timeout
              end,
     ?assertEqual({ok, code1}, Result),
+    
+    %cleanup
+    ok = stop(Pid),
+    true = meck:validate(test_worker),
+    meck:unload(test_worker),
+    true = meck:validate(servant_task_queue_manager),
+    meck:unload(servant_task_queue_manager).
+
+task_timeout_test() ->
+    meck:new(servant_task_queue_manager),
+    meck:new(test_worker, [non_strict]),
+    meck:expect(servant_task_queue_manager, get_task,
+                fun (WorkerPid) ->
+                         WorkerPid!{task, #taskinfo{code=code1, module=test_worker}}
+                end),
+    TestPid = self(),
+    meck:expect(servant_task_queue_manager, in_after,
+                fun (Time, Task) ->
+                         TestPid ! {delaying, Time, Task}
+                end),
+    meck:expect(test_worker, process_task,
+                fun(_Code)->
+                        %removing expectation for disable recursion
+                        meck:expect(servant_task_queue_manager, get_task,
+                                    fun (_WorkerPid) -> ok end),
+                        {timeout, 500}
+                end),
+    
+    {ok, Pid} = start_link(),
+    Result = receive
+                 {delaying, _Time, Task} -> {ok, Task}
+             after
+                     1000 -> timeout
+             end,
+    ?assertMatch({ok, #taskinfo{code=code1}}, Result),
     
     %cleanup
     ok = stop(Pid),

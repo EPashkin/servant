@@ -9,7 +9,13 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([start_link/0, stop/0, len/0, in/1, get_task/1]).
+-export([start_link/0, stop/0]).
+-export([
+         len/0,
+         in/1,
+         in_after/2,
+         get_task/1]
+       ).
 
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
@@ -22,6 +28,9 @@ len() ->
 
 in(Task) ->
     gen_server:call(?MODULE, {in, Task}).
+
+in_after(Time, Task) when is_integer(Time), Time >= 0 ->
+    timer:apply_after(Time, ?MODULE, in, [Task]).
 
 get_task(WorkerPid) ->
     gen_server:cast(?MODULE, {get_task, WorkerPid}).

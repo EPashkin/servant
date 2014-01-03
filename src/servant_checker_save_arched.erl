@@ -22,8 +22,9 @@ process_task({check_save_arched, Dir}, AddTaskFunc) ->
            end,
     lists:foreach(Func, SubDirs),
     ok;
-process_task(_Code, _AddTaskFunc) ->
-    unknown_code.
+process_task(Code, _AddTaskFunc) ->
+    error_logger:format("Unknown code in ~p:process_task(~p)", [?MODULE, Code]),
+    ok.
 
 %% ====================================================================
 %% Internal functions

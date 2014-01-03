@@ -27,5 +27,6 @@ init([]) ->
     {ok, { {one_for_one, 5, 10},
            [
             ?CHILD(servant_tasklist, worker),
-            ?CHILD(servant_task_queue_manager, worker)
+            ?CHILD(servant_task_queue_manager, worker),
+            ?CHILD(servant_task_queue_worker, worker)
            ]} }.

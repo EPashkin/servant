@@ -163,8 +163,7 @@ add_test_() ->
                ?_assertEqual(ok, addtask("Text1", code1, mod)),
                fun() ->
                        meck:new(servant_task_queue_manager),
-                       meck:expect(servant_task_queue_manager, in,
-                                   fun (_) -> ok end),
+                       meck:expect(servant_task_queue_manager, in, 1, ok),
                        
                        ?assertEqual(ok, doFromMenu(code1)),
                        ?assertEqual({ok,[]}, getForMenu()), %check remove from list                       

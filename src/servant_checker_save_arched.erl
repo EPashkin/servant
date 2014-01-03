@@ -9,7 +9,7 @@
 %% ====================================================================
 -export([]).
 
-process_task({check_save_arched, Dir}, AddTaskFunc) ->
+process_task({check_save_arched, Dir}) ->
     SubDirs = list_dir_subdirs(Dir),
     Func = fun(SubDir) ->
                    case contains_only_archive(SubDir) of
@@ -17,12 +17,12 @@ process_task({check_save_arched, Dir}, AddTaskFunc) ->
                        true -> DirName = filename:basename(SubDir),
                                IOList = io_lib:format("Move from subfolder archive ~s", [DirName]),
                                Text = lists:flatten(IOList),
-                               AddTaskFunc(Text, {do_save_arched, SubDir}, ?MODULE)
+                               servant:add_confirmation(Text, {do_save_arched, SubDir}, ?MODULE)
                    end
            end,
     lists:foreach(Func, SubDirs),
     ok;
-process_task(Code, _AddTaskFunc) ->
+process_task(Code) ->
     error_logger:format("Unknown code in ~p:process_task(~p)", [?MODULE, Code]),
     ok.
 
@@ -164,6 +164,7 @@ process_task_check_save_arched_test_() ->
      fun() ->
              meck:new(servant_file_proxy, [non_strict]),
              meck:new(filelib, [unstick]),
+             meck:new(servant),
              
              meck:expect(servant_file_proxy, list_dir_all,
                          fun ("basedir") -> {ok, ["file1", "file2", "dir1", "dir2"]};
@@ -174,22 +175,22 @@ process_task_check_save_arched_test_() ->
                          fun ("basedir/dir1") -> true;
                             ("basedir/dir2") -> true;
                             (_) -> false end),
-             meck:expect(servant_file_proxy, test_func,
-                         fun (_Text, _Code, _Module) -> ok end),
+             meck:expect(servant, add_confirmation, 3, ok),
              ok
      end,
      fun(_) ->
              %?debugFmt("~p~n", [meck:history(servant_file_proxy)]),
              true = meck:validate(filelib),
              meck:unload(filelib),
+             true = meck:validate(servant),
+             meck:unload(servant),
              true = meck:validate(servant_file_proxy),
              meck:unload(servant_file_proxy)
      end,
      [
-      ?_assertEqual(ok, process_task({check_save_arched, "basedir"}
-                                     , fun servant_file_proxy:test_func/3)),
-      ?_assert(meck:called(servant_file_proxy, test_func, ['_' , {do_save_arched, "basedir/dir1"}, ?MODULE])),
-      ?_assertNot(meck:called(servant_file_proxy, test_func, ['_' , {do_save_arched, "basedir/dir2"}, '_']))
+      ?_assertEqual(ok, process_task({check_save_arched, "basedir"})),
+      ?_assert(meck:called(servant, add_confirmation, ['_' , {do_save_arched, "basedir/dir1"}, ?MODULE])),
+      ?_assertNot(meck:called(servant, add_confirmation, ['_' , {do_save_arched, "basedir/dir2"}, '_']))
      ]
     }.
 

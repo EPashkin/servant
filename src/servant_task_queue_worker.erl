@@ -58,7 +58,7 @@ handle_info(init, not_inited) ->
     servant_task_queue_manager:get_task(self()),
     {noreply, #state{}};
 handle_info({task, #taskinfo{code=Code, module=Module}}, State) ->
-    ok = erlang:apply(Module, process_task, [Code, fun servant:add_confirmation/3]),
+    ok = erlang:apply(Module, process_task, [Code]),
     servant_task_queue_manager:get_task(self()),
     {noreply, State};
 handle_info(_Info, State) ->
@@ -108,7 +108,7 @@ task_test() ->
                 end),
     TestPid = self(),
     meck:expect(test_worker, process_task,
-                fun(Code, _)->
+                fun(Code)->
                         %removing expectation for disable recursion
                         meck:expect(servant_task_queue_manager, get_task,
                                     fun (_WorkerPid) -> ok end),

@@ -10,7 +10,7 @@
 -export([
          get_confirmations/0,
          process_confirmation/1,
-         add_confirmation/2
+         add_confirmation/3
         ]).
 
 %% Return list of confirmations
@@ -22,5 +22,5 @@ process_confirmation(Code) ->
     servant_tasklist:doFromMenu(Code).
 
 %% Add work to confirm
-add_confirmation(Text,Code) ->
-    servant_tasklist:addtask(Text,Code).
+add_confirmation(Text, Code, Module) ->
+    servant_tasklist:addtask(Text, Code, Module).

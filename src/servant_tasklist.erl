@@ -61,12 +61,13 @@ handle_call(getForMenu, _From, State=#state{list=List}) ->
                  || TaskInfo <- List],
     {reply, {ok, lists:reverse(ReplyList)}, State};
 handle_call({doFromMenu,Code}, _From, State=#state{list=List}) ->
-    Reply = case find_by_code(Code, List) of
-                false -> unknown_code;
-                %todo: do work in this task                
-                #taskinfo{} -> ok    
+    {Reply, NewState} = case find_by_code(Code, List) of
+                false -> {unknown_code, State};
+                #taskinfo{}=Task -> 
+                    servant_task_queue_manager:in(Task), 
+                    {ok, State#state{list=delete_by_code(Code, List)}}    
             end,
-    {reply, Reply, State};
+    {reply, Reply, NewState};
 handle_call(_Request, _From, State) ->
     Reply = {error, bad_request},
     {reply, Reply, State}.
@@ -110,6 +111,8 @@ code_change(OldVsn, State, _Extra) ->
 %% ====================================================================
 find_by_code(Code, List) ->
     lists:keyfind(Code, #taskinfo.code, List).
+delete_by_code(Code, List) ->
+    lists:keydelete(Code, #taskinfo.code, List).
 
 %% ====================================================================
 %% Tests
@@ -158,7 +161,19 @@ add_test_() ->
       fun(_)->[
                ?_assertEqual(unknown_code, doFromMenu(code1)),
                ?_assertEqual(ok, addtask("Text1", code1, mod)),
-               ?_assertEqual(ok, doFromMenu(code1))
+               fun() ->
+                       meck:new(servant_task_queue_manager),
+                       meck:expect(servant_task_queue_manager, in,
+                                   fun (_) -> ok end),
+                       
+                       ?assertEqual(ok, doFromMenu(code1)),
+                       ?assertEqual({ok,[]}, getForMenu()), %check remove from list                       
+                       ?assert(meck:called(servant_task_queue_manager, in, [#taskinfo{text='_', code=code1, module=mod}])),
+                       
+                       %cleanup
+                       true = meck:validate(servant_task_queue_manager),
+                       meck:unload(servant_task_queue_manager)
+               end
               ]
       end
      ]

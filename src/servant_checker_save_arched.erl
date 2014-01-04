@@ -162,7 +162,7 @@ process_task_check_save_arched_test_() ->
     {
      setup,
      fun() ->
-             meck:new(servant_file_proxy, [non_strict]),
+             meck:new(servant_file_proxy),
              meck:new(filelib, [unstick]),
              meck:new(servant),
              

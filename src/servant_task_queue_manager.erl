@@ -12,6 +12,7 @@
 -export([start_link/0, stop/0]).
 -export([
          len/0,
+         state/0,
          in/1,
          in_after/2,
          get_task/1]
@@ -26,8 +27,11 @@ stop() ->
 len() ->
     gen_server:call(?MODULE, len).
 
+state() ->
+    gen_server:call(?MODULE, state).
+
 in(Task) ->
-    gen_server:call(?MODULE, {in, Task}).
+    gen_server:cast(?MODULE, {in, Task}).
 
 in_after(Time, Task) when is_integer(Time), Time >= 0 ->
     timer:apply_after(Time, ?MODULE, in, [Task]).
@@ -61,17 +65,8 @@ handle_call(stop, _From, State) ->
     {stop, normal, ok, State};
 handle_call(len, _From, #state{ queue_length = QueueLength } = State) ->
     {reply, QueueLength, State};
-handle_call({in, Task}, _From, State) ->
-    NewState =
-        case there_are_waiting_workers(State) of
-            true ->
-                Worker = get_first_waiting_worker(State),
-                Worker ! { task, Task},
-                del_first_waiting_worker(State);
-            false ->
-                enqueue_task(Task, State)
-        end,
-    {reply, ok, NewState};
+handle_call(state, _From, State) ->
+    {reply, State, State};
 handle_call(_Request, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.
@@ -86,6 +81,17 @@ handle_cast({get_task, WorkerPid}, #state{ queue_length = 0 } = State) ->
 handle_cast({get_task, WorkerPid}, State) ->
     {Task, NewState} = dequeue_task(State),
     WorkerPid ! { task, Task },
+    {noreply, NewState};
+handle_cast({in, Task}, State) ->
+    NewState =
+        case there_are_waiting_workers(State) of
+            true ->
+                Worker = get_first_waiting_worker(State),
+                Worker ! { task, Task},
+                del_first_waiting_worker(State);
+            false ->
+                enqueue_task(Task, State)
+        end,
     {noreply, NewState};
 handle_cast(_Msg, State) ->
     {noreply, State}.

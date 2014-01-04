@@ -12,12 +12,12 @@
 process_task({check_save_arched, Dir}) ->
     SubDirs = list_dir_subdirs(Dir),
     Func = fun(SubDir) ->
-                   case contains_only_archive(SubDir) of
+                   case get_same_archive_in_directory(SubDir) of
                        false -> ok;
-                       true -> DirName = filename:basename(SubDir),
-                               IOList = io_lib:format("Move from subfolder archive ~s", [DirName]),
-                               Text = lists:flatten(IOList),
-                               servant:add_confirmation(Text, {do_save_arched, SubDir}, ?MODULE)
+                       _FileName -> DirName = filename:basename(SubDir),
+                                    IOList = io_lib:format("Move from subfolder archive ~s", [DirName]),
+                                    Text = lists:flatten(IOList),
+                                    servant:add_confirmation(Text, {do_save_arched, SubDir}, ?MODULE)
                    end
            end,
     lists:foreach(Func, SubDirs),
@@ -45,9 +45,9 @@ list_dir_subdirs(Dir) ->
     lists:filtermap(Func, Files).
 
 %% ====================================================================
-%% @doc Check directory to contains only archive with same name
+%% @doc Get archive with same name as directory, only if it contains only this archive
 %% ====================================================================
-contains_only_archive(Dir) ->
+get_same_archive_in_directory(Dir) ->
     DirName = filename:basename(Dir),
     {ok, Files} = servant_file_proxy:list_dir_all(Dir),
     Func = fun (_, false) -> false;
@@ -55,7 +55,7 @@ contains_only_archive(Dir) ->
                    case is_file_archive(FileName) and
                             (filename:rootname(FileName) == DirName) of
                        false -> false;
-                       true -> true
+                       true -> filename:join(Dir, FileName)
                    end
            end,
     case Files of
@@ -86,7 +86,7 @@ is_file_archive_test_() ->
      ?_assertNot(is_file_archive("test.erl"))
     ].
 
-contains_only_archive_test_() ->
+get_same_archive_in_directory_test_() ->
     {
      foreach,
      fun() ->
@@ -101,32 +101,32 @@ contains_only_archive_test_() ->
       fun(_) ->
               meck:expect(servant_file_proxy, list_dir_all,
                           fun (_) -> {ok, ["test1.rar"]} end),
-              ?_assert(contains_only_archive("basedir/test1"))
+              ?_assertEqual("basedir/test1/test1.rar", get_same_archive_in_directory("basedir/test1"))
       end,
       fun(_) ->
               meck:expect(servant_file_proxy, list_dir_all,
                           fun (_)-> {ok, ["test.rar"]} end),
-              ?_assertNot(contains_only_archive("basedir/test1b"))
+              ?_assertEqual(false, get_same_archive_in_directory("basedir/test1b"))
       end,
       fun(_) ->
               meck:expect(servant_file_proxy, list_dir_all,
                           fun (_)-> {ok, ["dir", "test.rar"]} end),
-              ?_assertNot(contains_only_archive("basedir/test2"))
+              ?_assertEqual(false, get_same_archive_in_directory("basedir/test2"))
       end,
       fun(_) ->
               meck:expect(servant_file_proxy, list_dir_all,
                           fun (_)-> {ok, ["dir", "test"]} end),
-              ?_assertNot(contains_only_archive("basedir/test3"))
+              ?_assertEqual(false, get_same_archive_in_directory("basedir/test3"))
       end,
       fun(_) ->
               meck:expect(servant_file_proxy, list_dir_all,
                           fun (_)-> {ok, ["test.rar", "file"]} end),
-              ?_assertNot(contains_only_archive("basedir/test4"))
+              ?_assertEqual(false, get_same_archive_in_directory("basedir/test4"))
       end,
       fun(_) ->
               meck:expect(servant_file_proxy, list_dir_all,
                           fun (_)-> {ok, []} end),
-              ?_assertNot(contains_only_archive("basedir/test5"))
+              ?_assertEqual(false, get_same_archive_in_directory("basedir/test5"))
       end
      ]
     }.

@@ -86,6 +86,17 @@ is_file_archive_test_() ->
      ?_assertNot(is_file_archive("test.erl"))
     ].
 
+tf_getbasedir() -> "basedir".
+tf_getsubdir() -> filename:join(tf_getbasedir(), "test1").
+tf_getfiles() -> [
+                  {filename:join(tf_getsubdir(), "test1.rar"), ["test1.rar"]},
+                  {false, ["test.rar"]},
+                  {false, ["dir", "test.rar"]},
+                  {false, ["dir", "test"]},
+                  {false, ["test.rar", "file"]},
+                  {false, []}
+                 ].
+
 get_same_archive_in_directory_test_() ->
     {
      foreach,
@@ -97,38 +108,13 @@ get_same_archive_in_directory_test_() ->
              true = meck:validate(servant_file_proxy),
              meck:unload(servant_file_proxy)
      end,
-     [
-      fun(_) ->
+     [fun(_) -> 
+              Dir = tf_getsubdir(),
               meck:expect(servant_file_proxy, list_dir_all,
-                          fun (_) -> {ok, ["test1.rar"]} end),
-              ?_assertEqual("basedir/test1/test1.rar", get_same_archive_in_directory("basedir/test1"))
-      end,
-      fun(_) ->
-              meck:expect(servant_file_proxy, list_dir_all,
-                          fun (_)-> {ok, ["test.rar"]} end),
-              ?_assertEqual(false, get_same_archive_in_directory("basedir/test1b"))
-      end,
-      fun(_) ->
-              meck:expect(servant_file_proxy, list_dir_all,
-                          fun (_)-> {ok, ["dir", "test.rar"]} end),
-              ?_assertEqual(false, get_same_archive_in_directory("basedir/test2"))
-      end,
-      fun(_) ->
-              meck:expect(servant_file_proxy, list_dir_all,
-                          fun (_)-> {ok, ["dir", "test"]} end),
-              ?_assertEqual(false, get_same_archive_in_directory("basedir/test3"))
-      end,
-      fun(_) ->
-              meck:expect(servant_file_proxy, list_dir_all,
-                          fun (_)-> {ok, ["test.rar", "file"]} end),
-              ?_assertEqual(false, get_same_archive_in_directory("basedir/test4"))
-      end,
-      fun(_) ->
-              meck:expect(servant_file_proxy, list_dir_all,
-                          fun (_)-> {ok, []} end),
-              ?_assertEqual(false, get_same_archive_in_directory("basedir/test5"))
+                          fun (Dir1) when Dir1 == Dir -> {ok, Files} end),
+              ?_assertEqual({Expected, Files}, {get_same_archive_in_directory(Dir), Files})
       end
-     ]
+      || {Expected, Files} <- tf_getfiles()]
     }.
 
 list_dir_subdirs_test_() ->

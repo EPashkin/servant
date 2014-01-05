@@ -26,7 +26,7 @@ start_link() ->
 init([]) ->
     {ok, { {rest_for_one, 5, 10},
            [
-            ?CHILD(servant_tasklist, worker),
+            ?CHILD(servant_confirmation_list, worker),
             ?CHILD(servant_task_queue_manager, worker),
             ?CHILD(servant_task_queue_worker, worker),
             ?CHILD(servant_task_starter, worker)

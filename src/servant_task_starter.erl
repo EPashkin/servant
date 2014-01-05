@@ -32,7 +32,7 @@ stop() ->
 init([]) ->
     Timeout = application:get_env(?APP, 'timeout', ?TIMEOUT),
     Tasks = application:get_env(?APP, 'tasks', []),
-    case is_number(Timeout) andalso (Timeout>0) andalso is_tasks_correct(Tasks) of
+    case is_number(Timeout) andalso (Timeout>0) andalso process_tasks(Tasks) of
         true -> {ok, #state{timeout=Timeout, tasks=Tasks}, Timeout};
         false ->
             error_logger:format("Bad parameters for servant application:~ntimeout=~p~ntasks=~p~n",
@@ -63,6 +63,9 @@ handle_cast(_Msg, State) ->
 %% ====================================================================
 %% @doc <a href="http://www.erlang.org/doc/man/gen_server.html#Module:handle_info-2">gen_server:handle_info/2</a>
 %% ====================================================================
+handle_info(timeout, #state{timeout=Timeout, tasks=Tasks}=State) ->
+    process_tasks(Tasks),
+    {noreply, State, Timeout};
 handle_info(_Info, State) ->
     {noreply, State}.
 
@@ -92,29 +95,33 @@ get_error_init() ->
 
 
 %% ====================================================================
-%% @doc checks tasks format [task_dir]
+%% @doc process tasks, return boolean()
+%% format: [task_dir]
 %% ====================================================================
-is_tasks_correct(List) when is_list(List) ->
-    lists:all(fun is_task_dir_correct/1, List);
-is_tasks_correct(_) ->
+process_tasks(List) when is_list(List) ->
+    lists:all(fun process_task_dir/1, List);
+process_tasks(_) ->
     false.
 
 %% ====================================================================
-%% @doc checks tasks dir format {Dir, [TaskInfo]}
+%% @doc process tasks dir
+%% format: {Dir, [TaskInfo]}
 %% ====================================================================
-is_task_dir_correct({Dir, TaskInfos})
+process_task_dir({Dir, TaskInfos})
   when is_list(Dir) andalso is_list(TaskInfos)  ->
-    lists:all(fun is_task_info_correct/1, TaskInfos);
-is_task_dir_correct(_) ->
+    lists:all(fun (TaskInfo) -> process_task_info(Dir, TaskInfo) end, TaskInfos);
+process_task_dir(_) ->
     false.
 
 %% ====================================================================
-%% @doc checks tasks dir format {CodeTag, Module}
+%% @doc process tasks info by adding it in servant_task_queue_manager 
 %% ====================================================================
-is_task_info_correct({CodeTag, Module})
+process_task_info(Dir, {CodeTag, Module})
   when is_atom(CodeTag) andalso is_atom(Module) ->
+    servant_task_queue_manager:in(
+      #taskinfo{text="", code={CodeTag,Dir}, module=Module}),
     true;
-is_task_info_correct(_)->
+process_task_info(_, _) ->
     false.
 
 %% ====================================================================
@@ -146,11 +153,23 @@ tf_tasks() ->
      {false, error}
     ].
 
-is_tasks_correct_test_() ->
-    {inparallel,
-     [
-      ?_assertEqual({Expected, Value}, {is_tasks_correct(Value), Value})
-      || {Expected, Value} <- tf_tasks()]
+process_tasks_correct_test_() ->
+    {
+     setup,
+     fun() ->
+             meck:new(servant_task_queue_manager),
+             
+             meck:expect(servant_task_queue_manager, in, 1, ok),
+             ok
+     end,
+     fun(_) ->
+             true = meck:validate(servant_task_queue_manager),
+             meck:unload(servant_task_queue_manager)
+     end,
+     {inparallel,
+      [?_assertEqual({Expected, Value}, {process_tasks(Value), Value})
+       || {Expected, Value} <- tf_tasks()]
+     }
     }.
 
 init_test_() ->

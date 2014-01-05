@@ -119,7 +119,12 @@ process_task_dir(_) ->
 process_task_info(Dir, {CodeTag, Module})
   when is_atom(CodeTag) andalso is_atom(Module) ->
     servant_task_queue_manager:in(
-      #taskinfo{text="", code={CodeTag,Dir}, module=Module}),
+      #taskinfo{text="", code={CodeTag, Dir}, module=Module}),
+    true;
+process_task_info(Dir, CodeTag)
+  when is_atom(CodeTag) ->
+    servant_task_queue_manager:in(
+      #taskinfo{text="", code={CodeTag, Dir}}),
     true;
 process_task_info(_, _) ->
     false.
@@ -145,7 +150,6 @@ tf_tasks() ->
      {false, [{""}]},
      {false, [{ok, []}]},
      {true, [{"", [{code, module}]}]},
-     {false, [{"", [ok]}]},
      {false, [{"", [{ok}]}]},
      {false, [{"", [{ok,ok,ok}]}]},
      {false, [{"", [{ok, "ok"}]}]},
@@ -153,7 +157,7 @@ tf_tasks() ->
      {false, error}
     ].
 
-process_tasks_correct_test_() ->
+process_tasks_test_() ->
     {
      setup,
      fun() ->

@@ -4,10 +4,26 @@
 -module(servant_checker_save_arched).
 -compile(export_all).
 
+-include("internal.hrl").
+
 %% ====================================================================
 %% API functions
 %% ====================================================================
 -export([]).
+
+get_subitems(Dir) ->
+    list_dir_subdirs(Dir).
+
+check_subitem(SubDir) ->
+    get_same_archive_in_directory(SubDir).
+
+get_confirmations(SubDir, _CheckResult) ->
+    DirName = filename:basename(SubDir),
+    IOList = io_lib:format("Move from subfolder archive ~s", [DirName]),
+    [#taskinfo{text=IOList, code={do_save_arched, SubDir}}].
+
+do_subitem(_Dir, CheckResult) ->
+    move_file_to_parent_directory(CheckResult).
 
 process_task({check_save_arched, Dir}) ->
     SubDirs = list_dir_subdirs(Dir),

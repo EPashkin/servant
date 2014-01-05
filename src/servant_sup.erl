@@ -28,5 +28,6 @@ init([]) ->
            [
             ?CHILD(servant_tasklist, worker),
             ?CHILD(servant_task_queue_manager, worker),
-            ?CHILD(servant_task_queue_worker, worker)
+            ?CHILD(servant_task_queue_worker, worker),
+            ?CHILD(servant_task_starter, worker)
            ]} }.

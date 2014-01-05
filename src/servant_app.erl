@@ -1,7 +1,8 @@
 -module(servant_app).
 
 -behaviour(application).
--define(APP, servant).
+
+-include("internal.hrl").
 -define(SUP, servant_sup).
 
 %% Application callbacks
@@ -12,7 +13,7 @@
 %% ===================================================================
 
 start(_StartType, _StartArgs) ->
-    servant_sup:start_link().
+    ?SUP:start_link().
 
 stop(_State) ->
     ok.

@@ -6,6 +6,8 @@
 -behaviour(gen_server).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
+-include("internal.hrl").
+
 %% ====================================================================
 %% API functions
 %% ====================================================================
@@ -15,8 +17,8 @@
          state/0,
          in/1,
          in_after/2,
-         get_task/1]
-       ).
+         get_task/1
+        ]).
 
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
@@ -30,7 +32,10 @@ len() ->
 state() ->
     gen_server:call(?MODULE, state).
 
-in(Task) ->
+in(Task) when is_record(Task, taskinfo) ->
+    in_internal(Task).
+
+in_internal(Task) ->
     gen_server:cast(?MODULE, {in, Task}).
 
 in_after(Time, Task) when is_integer(Time), Time >= 0 ->
@@ -209,9 +214,9 @@ in_len_test_() ->
      [
       fun(_) -> [
                  ?_assertEqual(0, len()),
-                 ?_assertEqual(ok, in(code1)),
+                 ?_assertEqual(ok, in_internal(code1)),
                  ?_assertEqual(1, len()),
-                 ?_assertEqual(ok, in(code1)),
+                 ?_assertEqual(ok, in_internal(code1)),
                  ?_assertEqual(2, len())
                 ]
       end
@@ -241,7 +246,7 @@ get_task_test_() ->
                                                  50 -> TestPid ! timeout
                                          end
                                 end,
-                         in(code1),
+                         in_internal(code1),
                          _Pid = spawn_link(Func),
                          Result = receive
                                       Msg -> Msg 
@@ -267,7 +272,7 @@ get_task_test_() ->
                                 end,
                          Pid = spawn_link(Func),
                          ok = get_task(Pid),
-                         in(code1),
+                         in_internal(code1),
                          ?assertEqual(0, len()),
                          Result = receive
                                       Msg -> Msg 
@@ -293,7 +298,7 @@ get_task_test_() ->
                                   after
                                           1000 -> no_result
                                   end,
-                         in(code1),
+                         in_internal(code1),
                          ?assertEqual(1, len()),
                          ?assertEqual(exiting, Result)
                  end

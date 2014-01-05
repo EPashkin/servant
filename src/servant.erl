@@ -15,12 +15,12 @@
 
 %% Return list of confirmations
 get_confirmations() ->
-    servant_tasklist:getForMenu().
+    servant_tasklist:get_confirmations().
 
 %% Do confirmed work
 process_confirmation(Code) ->
-    servant_tasklist:doFromMenu(Code).
+    servant_tasklist:process_confirmation(Code).
 
 %% Add work to confirm
 add_confirmation(Text, Code, Module) ->
-    servant_tasklist:addtask(Text, Code, Module).
+    servant_tasklist:add_confirmation(Text, Code, Module).

@@ -12,7 +12,7 @@
 %% API functions
 %% ====================================================================
 -export([start_link/0, stop/0]).
--export([addtask/3, getForMenu/0, doFromMenu/1]).
+-export([add_confirmation/3, get_confirmations/0, process_confirmation/1]).
 
 start_link()->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
@@ -20,14 +20,14 @@ start_link()->
 stop()->
     gen_server:call(?SERVER, stop).
 
-addtask(Text, Code, Module) ->
-    gen_server:call(?SERVER, {addtask, Text, Code, Module}).
+add_confirmation(Text, Code, Module) ->
+    gen_server:call(?SERVER, {add_confirmation, Text, Code, Module}).
 
-getForMenu() ->
-    gen_server:call(?SERVER, getForMenu).
+get_confirmations() ->
+    gen_server:call(?SERVER, get_confirmations).
 
-doFromMenu(Code) ->
-    gen_server:call(?SERVER, {doFromMenu, Code}).
+process_confirmation(Code) ->
+    gen_server:call(?SERVER, {process_confirmation, Code}).
 
 %% ====================================================================
 %% Behavioural functions 
@@ -48,7 +48,7 @@ init([]) ->
 %% ====================================================================
 handle_call(stop, _From, State) ->
     {stop, normal, ok, State};
-handle_call({addtask, Text, Code, Module}, _From, State=#state{list=List}) ->
+handle_call({add_confirmation, Text, Code, Module}, _From, State=#state{list=List}) ->
     Pred = fun (#taskinfo{code=ItemCode}) -> ItemCode == Code end,
     NewList = case lists:any(Pred, List) of
                   true -> List;
@@ -56,11 +56,11 @@ handle_call({addtask, Text, Code, Module}, _From, State=#state{list=List}) ->
                          [Info|List]
               end,
     {reply, ok, State#state{list=NewList}};
-handle_call(getForMenu, _From, State=#state{list=List}) ->
+handle_call(get_confirmations, _From, State=#state{list=List}) ->
     ReplyList = [{TaskInfo#taskinfo.text, TaskInfo#taskinfo.code}
                  || TaskInfo <- List],
     {reply, {ok, lists:reverse(ReplyList)}, State};
-handle_call({doFromMenu,Code}, _From, State=#state{list=List}) ->
+handle_call({process_confirmation, Code}, _From, State=#state{list=List}) ->
     {Reply, NewState} = case find_by_code(Code, List) of
                 false -> {unknown_code, State};
                 #taskinfo{}=Task -> 
@@ -139,34 +139,34 @@ add_test_() ->
      end,
      [
       fun(_) -> [
-                 ?_assertEqual(ok, addtask("Text1", code1, mod)),
-                 ?_assertEqual({ok, [{"Text1", code1}]}, getForMenu()),              
-                 ?_assertEqual(ok, addtask("Text2", code2, mod)),
+                 ?_assertEqual(ok, add_confirmation("Text1", code1, mod)),
+                 ?_assertEqual({ok, [{"Text1", code1}]}, get_confirmations()),              
+                 ?_assertEqual(ok, add_confirmation("Text2", code2, mod)),
                  ?_assertEqual({ok, [{"Text1", code1},
-                                     {"Text2", code2}]}, getForMenu())
+                                     {"Text2", code2}]}, get_confirmations())
                 ]
       end,
       %check not add items with same code
       fun(_) -> [
-                 ?_assertEqual(ok, addtask("Text1", code1, mod)),
-                 ?_assertEqual(ok, addtask("Text2", code1, mod)),
-                 ?_assertEqual({ok, [{"Text1", code1}]}, getForMenu()),
+                 ?_assertEqual(ok, add_confirmation("Text1", code1, mod)),
+                 ?_assertEqual(ok, add_confirmation("Text2", code1, mod)),
+                 ?_assertEqual({ok, [{"Text1", code1}]}, get_confirmations()),
                  %check that list not reordered
-                 ?_assertEqual(ok, addtask("Text3", code3, mod)),
-                 ?_assertEqual(ok, addtask("Text4", code1, mod)),
+                 ?_assertEqual(ok, add_confirmation("Text3", code3, mod)),
+                 ?_assertEqual(ok, add_confirmation("Text4", code1, mod)),
                  ?_assertEqual({ok, [{"Text1", code1},
-                                     {"Text3", code3}]}, getForMenu())
+                                     {"Text3", code3}]}, get_confirmations())
                 ]              
       end,
       fun(_)->[
-               ?_assertEqual(unknown_code, doFromMenu(code1)),
-               ?_assertEqual(ok, addtask("Text1", code1, mod)),
+               ?_assertEqual(unknown_code, process_confirmation(code1)),
+               ?_assertEqual(ok, add_confirmation("Text1", code1, mod)),
                fun() ->
                        meck:new(servant_task_queue_manager),
                        meck:expect(servant_task_queue_manager, in, 1, ok),
                        
-                       ?assertEqual(ok, doFromMenu(code1)),
-                       ?assertEqual({ok,[]}, getForMenu()), %check remove from list                       
+                       ?assertEqual(ok, process_confirmation(code1)),
+                       ?assertEqual({ok,[]}, get_confirmations()), %check remove from list                       
                        ?assert(meck:called(servant_task_queue_manager, in, [#taskinfo{text='_', code=code1, module=mod}])),
                        
                        %cleanup

@@ -2,14 +2,19 @@
 %% @doc Checker task for move archives from subfolders
 
 -module(servant_checker_save_arched).
--compile(export_all).
+-behaviour(servant_checker).
+-export([get_subitems/1, check_subitem/1, get_confirmations/2, do_subitem/2]).
 
 -include("internal.hrl").
 
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([]).
+
+
+%% ====================================================================
+%% Behavioural functions 
+%% ====================================================================
 
 get_subitems(Dir) ->
     list_dir_subdirs(Dir).

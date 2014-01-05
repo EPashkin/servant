@@ -1,14 +1,26 @@
 %% @author Evgeny Pashkin
 %% @doc Generic checker caller
 
--module(servant_check_processor).
+-module(servant_checker).
 
 -include("internal.hrl").
+
+-export([behaviour_info/1]).
 
 %% ====================================================================
 %% API functions
 %% ====================================================================
 -export([process_task/1]).
+
+behaviour_info(callbacks) ->
+    [
+     {get_subitems, 1},
+     {check_subitem, 1},
+     {get_confirmations, 2},
+     {do_subitem, 2}
+    ];
+behaviour_info(_Other) ->
+    undefined.
 
 process_task({Code, Dir}) when is_atom(Code) ->
     case analyze_code(Code) of

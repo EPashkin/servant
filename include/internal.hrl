@@ -1,3 +1,3 @@
--record(taskinfo,{text, code, module=servant_check_processor}).
+-record(taskinfo,{text, code, module=servant_checker}).
 
 -define(APP, servant).

@@ -21,7 +21,7 @@ process_task({check_save_arched, Dir}) ->
                    end
            end,
     lists:foreach(Func, SubDirs),
-    {timeout, 10000};
+    ok;
 process_task({do_save_arched, Dir}) ->
     case get_same_archive_in_directory(Dir) of
         false -> ok;
@@ -196,7 +196,7 @@ process_task_check_save_arched_test_() ->
              meck:unload(servant_file_proxy)
      end,
      [
-      ?_assertMatch({timeout, _}, process_task({check_save_arched, "basedir"})),
+      ?_assertMatch(ok, process_task({check_save_arched, "basedir"})),
       ?_assert(meck:called(servant, add_confirmation, ['_' , {do_save_arched, "basedir/dir1"}, ?MODULE])),
       ?_assertNot(meck:called(servant, add_confirmation, ['_' , {do_save_arched, "basedir/dir2"}, '_']))
      ]

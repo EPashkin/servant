@@ -118,6 +118,33 @@ add_confirmations([#taskinfo{text=IOList, code=Code, module=Module}|Rest])->
 %-ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
 
+add_confirmations_test_() ->
+    {
+     foreach,
+     fun() ->
+             meck:new(servant),
+             meck:expect(servant, add_confirmation, 3, ok),
+             ok
+     end,
+     fun(_) ->
+             true = meck:validate(servant),
+             meck:unload(servant)
+     end,
+     [
+      fun(_) ->
+              [
+               ?_assertEqual(ok, add_confirmations([])),
+               ?_assertNot(meck:called(servant, get_subitems, ['_', '_', '_']))
+              ]
+      end,
+      fun(_) ->
+              [
+               ?_assertEqual(ok, add_confirmations([#taskinfo{text=["Text"], code=code1, module=module1}])),
+               ?_assertNot(meck:called(servant, get_subitems, ["Text", code1, module1]))
+              ]
+      end
+     ]}.
+
 functions_test_() ->
     {
      foreach,

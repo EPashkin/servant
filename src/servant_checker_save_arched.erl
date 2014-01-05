@@ -22,6 +22,11 @@ process_task({check_save_arched, Dir}) ->
            end,
     lists:foreach(Func, SubDirs),
     {timeout, 10000};
+process_task({do_save_arched, Dir}) ->
+    case get_same_archive_in_directory(Dir) of
+        false -> ok;
+        FileName -> move_file_to_parent_directory(FileName)
+    end;
 process_task(Code) ->
     error_logger:format("Unknown code in ~p:process_task(~p)", [?MODULE, Code]),
     ok.
@@ -62,6 +67,20 @@ get_same_archive_in_directory(Dir) ->
         [] -> false;
         _ ->lists:foldl(Func, true, Files)
     end.
+
+move_file_to_parent_directory(File) ->
+    NewFile = get_new_file_name(File),
+    Res = servant_file_proxy:rename(File, NewFile),
+    case Res of
+        ok -> ok;
+        {error, _Reason} -> ok
+    end.
+
+get_new_file_name(File) ->
+    FileName = filename:basename(File),
+    Dir = filename:dirname(File),
+    ParentDir = filename:dirname(Dir),
+    filename:join(ParentDir, FileName).
 
 is_file_archive(FileName) ->
     case filename:extension(FileName) of
@@ -144,6 +163,9 @@ list_dir_subdirs_test_() ->
      ]
     }.
 
+get_new_file_name_test() ->
+    ?assertEqual("basedir/dir1.rar", get_new_file_name("basedir/dir1/dir1.rar")).
+
 process_task_check_save_arched_test_() ->
     {
      setup,
@@ -177,6 +199,38 @@ process_task_check_save_arched_test_() ->
       ?_assertMatch({timeout, _}, process_task({check_save_arched, "basedir"})),
       ?_assert(meck:called(servant, add_confirmation, ['_' , {do_save_arched, "basedir/dir1"}, ?MODULE])),
       ?_assertNot(meck:called(servant, add_confirmation, ['_' , {do_save_arched, "basedir/dir2"}, '_']))
+     ]
+    }.
+
+process_task_do_save_arched_test_() ->
+    {
+     foreach,
+     fun() ->
+             meck:new(servant_file_proxy),
+             
+             meck:expect(servant_file_proxy, list_dir_all, 1, {ok, ["dir1.rar"]}), 
+             meck:expect(servant_file_proxy, rename, 2, ok),
+             ok
+     end,
+     fun(_) ->
+             true = meck:validate(servant_file_proxy),
+             meck:unload(servant_file_proxy)
+     end,
+     [
+      fun(_) ->
+              [
+               ?_assertMatch(ok, process_task({do_save_arched, "basedir/dir1"})),
+               ?_assert(meck:called(servant_file_proxy, list_dir_all, ["basedir/dir1"])),
+               ?_assert(meck:called(servant_file_proxy, rename, ["basedir/dir1/dir1.rar", "basedir/dir1.rar"]))
+              ]
+      end,
+      fun(_) ->
+              [
+               ?_assertMatch(ok, process_task({do_save_arched, "basedir/dir2"})),
+               ?_assert(meck:called(servant_file_proxy, list_dir_all, ["basedir/dir2"])),
+               ?_assertNot(meck:called(servant_file_proxy, rename, ['_', '_']))
+              ]
+      end
      ]
     }.
 

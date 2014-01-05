@@ -10,3 +10,6 @@
 
 list_dir_all(Dir) ->
     file:list_dir_all(Dir).
+
+rename(Source, Destination) ->
+    file:rename(Source, Destination).

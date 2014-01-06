@@ -12,7 +12,8 @@
     {timeout, 10000},
     {tasks, [
       {"D:/_Manga/1", [
-        check_save_arched
+        check_save_arched,
+        check_archivation
       ]}
     ]}
   ]}

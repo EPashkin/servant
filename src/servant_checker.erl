@@ -76,7 +76,7 @@ analyze_code(Code) when is_atom(Code) ->
 %% ====================================================================
 process_oper_module(Oper, Mod)
   when is_atom(Oper) andalso is_list(Mod)->
-    Module = list_to_existing_atom("servant_checker_" ++ Mod),
+    Module = list_to_atom("servant_checker_" ++ Mod),
     case module_exists(Module) of
         true -> {Oper, Module};
         false -> Module

@@ -13,3 +13,6 @@ list_dir_all(Dir) ->
 
 rename(Source, Destination) ->
     file:rename(Source, Destination).
+
+del_dir(Dir) ->
+    file:del_dir(Dir).

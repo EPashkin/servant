@@ -1,4 +1,9 @@
-ebin/
-.eunit/
-servant_node*/
-deps/
+.eunit
+deps
+*.o
+*.beam
+*.plt
+*.app
+erl_crash.dump
+servant_node/
+/ebin

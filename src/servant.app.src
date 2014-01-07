@@ -14,7 +14,8 @@
       {"D:/_Manga/1", [
         check_save_arched,
         check_archivation,
-        check_remove_empty_dir
+        check_remove_empty_dir,
+        check_recheck_confirmations
       ]}
     ]}
   ]}

@@ -10,7 +10,7 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([process_task/1]).
+-export([process_task/1, check_task/1]).
 
 behaviour_info(callbacks) ->
     [
@@ -32,13 +32,21 @@ process_task(Code) ->
     error_logger:format("Unknown code in ~p:process_task(~p)~n", [?MODULE, Code]),
     ok.
 
+check_task({Code, Dir}) when is_atom(Code) ->
+    case analyze_code(Code) of
+        {Oper, Module} -> do_check(Oper, Dir, Module);
+        _ -> false
+    end;
+check_task(Code) ->
+    error_logger:format("Unknown code in ~p:check_task(~p)~n", [?MODULE, Code]),
+    false.
+
 %% ====================================================================
 %% Internal functions
 %% ====================================================================
 
 %% ====================================================================
-%% @doc Extract from code operation and module
-%% check_save_arched -> {check, servant_checker_save_arched}. 
+%% @doc Do task 
 %% ====================================================================
 do_task(check, Dir,  Module) ->
     SubDirs = Module:get_subitems(Dir),
@@ -57,6 +65,16 @@ do_task(do, Dir, Module) ->
         CheckResult -> Module:do_subitem(Dir, CheckResult)
     end.
 
+%% ====================================================================
+%% @doc Check task is actual 
+%% ====================================================================
+do_check(check, _Dir, _Module) ->
+    true;
+do_check(do, Dir, Module) ->
+    case Module:check_subitem(Dir) of
+        false -> false;
+        _ -> true
+    end.
 
 %% ====================================================================
 %% @doc Extract from code operation and module
@@ -196,7 +214,7 @@ functions_test_() ->
                ?_assert(meck:called(servant_checker_test, get_confirmations, ["basedir/dir1", "basedir/dir1/dir1.rar"]))
               ]
       end,
-      fun(_) -> %do_task(check)
+      fun(_) -> %do_task(do)
               meck:expect(servant_checker_test, check_subitem,
                           fun ("basedir/dir1") -> "basedir/dir1/dir1.rar"; 
                              ("basedir/dir2") -> false
@@ -212,6 +230,49 @@ functions_test_() ->
                ?_assertEqual(ok, do_task(do, "basedir/dir2", servant_checker_test)),
                ?_assert(meck:called(servant_checker_test, check_subitem, ["basedir/dir2"])),
                ?_assertNot(meck:called(servant_checker_test, do_subitem, ["basedir/dir2", '_']))
+              ]
+      end,
+      fun(_) -> %do_check(check)
+              meck:expect(servant_checker_test, check_subitem,
+                          fun ("basedir/dir1") -> "basedir/dir1/dir1.rar"; 
+                             ("basedir/dir2") -> false
+                          end),
+              meck:expect(servant_checker_test, get_confirmations, 2, []),
+              meck:expect(servant_checker_test, do_subitem, 2, test),
+              [
+               ?_assertEqual(true, do_check(check, "", servant_checker_test)),
+               ?_assertNot(meck:called(servant_checker_test, check_subitem, ['_']))
+              ]
+      end,
+      fun(_) -> %do_check(do)
+              meck:expect(servant_checker_test, check_subitem,
+                          fun ("basedir/dir1") -> "basedir/dir1/dir1.rar"; 
+                             ("basedir/dir2") -> false
+                          end),
+              [
+               %with good check
+               ?_assertEqual(true, do_check(do, "basedir/dir1", servant_checker_test)),
+               ?_assert(meck:called(servant_checker_test, check_subitem, ["basedir/dir1"])),
+               %with bad check
+               ?_assertEqual(false, do_check(do, "basedir/dir2", servant_checker_test)),
+               ?_assert(meck:called(servant_checker_test, check_subitem, ["basedir/dir2"]))
+              ]
+      end,
+      fun(_) -> %check_task
+              meck:expect(servant_checker_test, check_subitem,
+                          fun ("basedir/dir1") -> "basedir/dir1/dir1.rar"; 
+                             ("basedir/dir2") -> false
+                          end),
+              [
+               %with good check
+               ?_assertEqual(true, check_task({do_test, "basedir/dir1"})),
+               ?_assert(meck:called(servant_checker_test, check_subitem, ["basedir/dir1"])),
+               %with bad oper check
+               ?_assertEqual(false, check_task({doo_test, "basedir/dir2"})),
+               ?_assertNot(meck:called(servant_checker_test, check_subitem, ["basedir/dir2"])),
+               %with bad args check
+               ?_assertEqual(false, check_task(do_test)),
+               ?_assertNot(meck:called(servant_checker_test, check_subitem, ["basedir/dir2"]))
               ]
       end
      ]

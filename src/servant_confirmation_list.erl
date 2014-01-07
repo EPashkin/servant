@@ -16,7 +16,8 @@
          add_confirmation/1,
          add_confirmation/3,
          get_confirmations/0,
-         process_confirmation/1
+         process_confirmation/1,
+         recheck_confirmations/0
         ]).
 
 start_link()->
@@ -35,6 +36,9 @@ get_confirmations() ->
 
 process_confirmation(Code) ->
     gen_server:call(?SERVER, {process_confirmation, Code}).
+
+recheck_confirmations() ->
+    gen_server:cast(?SERVER, recheck_confirmations).
 
 %% ====================================================================
 %% Behavioural functions 
@@ -84,6 +88,9 @@ handle_call(_Request, _From, State) ->
 %% ====================================================================
 %% @doc <a href="http://www.erlang.org/doc/man/gen_server.html#Module:handle_cast-2">gen_server:handle_cast/2</a>
 %% ====================================================================
+handle_cast(recheck_confirmations, State) ->
+    NewState = recheck(State),
+    {noreply, NewState};
 handle_cast(_Msg, State) ->
     {noreply, State}.
 
@@ -123,6 +130,13 @@ delete_by_code(Code, List) ->
 
 confirmation_to_task(#confirmation{code=Code, module=Module}) ->
     #task{code=Code, module=Module}.
+
+recheck(#state{list=List}=State) ->
+    NewList = lists:filter(fun is_confirmation_actual/1, List),
+    State#state{list=NewList}.
+
+is_confirmation_actual(#confirmation{code=Code, module=Module}) ->
+    Module:check_task(Code).
 
 %% ====================================================================
 %% Tests
@@ -183,6 +197,50 @@ add_test_() ->
                        true = meck:validate(servant_task_queue_manager),
                        meck:unload(servant_task_queue_manager)
                end
+              ]
+      end
+     ]
+    }.
+
+tf_confirmation_by_code(Code) ->
+    #confirmation{code={Code,""}}.
+
+rechecks_test_() ->
+    {
+     foreach,
+     fun() ->
+             meck:new(servant_checker),
+             
+             meck:expect(servant_checker, check_task,
+                         fun ({code1, _}) -> true;
+                            (_) -> false
+                         end),
+             ok
+     end,
+     fun(_) ->
+             true = meck:validate(servant_checker),
+             meck:unload(servant_checker)
+     end,
+     [
+      fun(_) -> %is_confirmation_actual
+              [
+               ?_assertMatch({confirmation, _, code1, servant_checker}, #confirmation{code=code1}),
+               ?_assertEqual(true, is_confirmation_actual(#confirmation{code={code1,""}})),
+               ?_assertEqual(false, is_confirmation_actual(#confirmation{code={code2,""}}))
+              ]
+      end,
+      fun(_) -> %recheck
+              State = #state{list=[tf_confirmation_by_code(code1), tf_confirmation_by_code(code2)]},
+              [
+               ?_assertEqual(State#state{list=[tf_confirmation_by_code(code1)]},
+                                        recheck(State))
+              ]
+      end,
+      fun(_) -> %handle_cast(recheck_confirmations
+              State = #state{list=[tf_confirmation_by_code(code1), tf_confirmation_by_code(code2)]},
+              [
+               ?_assertEqual({noreply, State#state{list=[tf_confirmation_by_code(code1)]}},
+                             handle_cast(recheck_confirmations, State))
               ]
       end
      ]

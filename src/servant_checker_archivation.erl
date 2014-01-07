@@ -57,7 +57,7 @@ archive_directory(Dir) ->
     FileName = filename:basename(Dir) ++ ".rar",
     {ok, OldDir} = file:get_cwd(),
     file:set_cwd(Dir),
-    Command = ["start winrar", " m", " -ibck -r -s- ", FileName],
+    Command = ["start /w winrar", " m", " -ibck -r -s- ", FileName],
     os:cmd(Command),
     file:set_cwd(OldDir),
     ok.

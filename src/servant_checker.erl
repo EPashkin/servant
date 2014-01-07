@@ -25,11 +25,11 @@ behaviour_info(_Other) ->
 process_task({Code, Dir}) when is_atom(Code) ->
     case analyze_code(Code) of
         {Oper, Module} -> do_task(Oper, Dir, Module);
-        _ -> error_logger:format("Wrong code in ~p:process_task(~p)", [?MODULE, Code])
+        _ -> error_logger:format("Wrong code in ~p:process_task(~p)~n", [?MODULE, Code])
     end,
     ok;
 process_task(Code) ->
-    error_logger:format("Unknown code in ~p:process_task(~p)", [?MODULE, Code]),
+    error_logger:format("Unknown code in ~p:process_task(~p)~n", [?MODULE, Code]),
     ok.
 
 %% ====================================================================

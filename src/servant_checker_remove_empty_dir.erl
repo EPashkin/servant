@@ -27,7 +27,8 @@ get_confirmations(SubDir, _CheckResult) ->
     [#taskinfo{text=IOList, code={do_remove_empty_dir, SubDir}}].
 
 do_subitem(Dir, _CheckResult) ->
-    file:del_dir(Dir).
+    servant_file_proxy:del_dir(Dir),
+    ok.
 
 %% ====================================================================
 %% Internal functions

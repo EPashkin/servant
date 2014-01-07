@@ -54,7 +54,23 @@ escript rebar compile
 Build and start server
 -----
 
-a) To build Servant and run tests, go to the servant directory and type:
+a) To configure server, edit `src/servant.app.src` in this part:
+```erlang
+  {env, [
+    {timeout, 10000},	%delay beetwen checks
+    {tasks, [
+      {"D:/_Manga/1", [	%path to checked directory
+        check_save_arched, %checks
+        check_archivation,
+        check_remove_empty_dir,
+        check_recheck_confirmations
+      ]}
+    ]}
+  ]}
+```
+Hint: dirs use unix delimeter '/'.
+
+b) To build Servant and run tests, go to the servant directory and type:
 ```sh
 rebar compile eunit skip_deps=true
 ```
@@ -65,12 +81,12 @@ Both are expected due to the way Erlang currently prints errors. The
 important line you should look for is `All XX tests passed`, if that
 appears all is correct.
 
-b) To generate release:<br>
+c) To generate release:<br>
 ```sh
 rebar generate
 ```
 
-c) To start server:<br>
+d) To start server:<br>
 on Windows (service currently not working)
 ```bat
 rel\servant_node\bin\servant_node.cmd console

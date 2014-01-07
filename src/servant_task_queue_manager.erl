@@ -217,7 +217,8 @@ in_len_test_() ->
                  ?_assertEqual(ok, in_internal(code1)),
                  ?_assertEqual(1, len()),
                  ?_assertEqual(ok, in_internal(code1)),
-                 ?_assertEqual(2, len())
+                 ?_assertEqual(2, len()),
+                 ?_assertMatch(#state{queue_length=2}, state())
                 ]
       end
      ]

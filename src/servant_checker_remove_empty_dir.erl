@@ -34,11 +34,45 @@ do_subitem(Dir, _CheckResult) ->
 %% ====================================================================
 
 is_empty_dir(Dir) ->
-    Files = case servant_file_proxy:list_dir_all(Dir) of
-                {ok, Files2} -> Files2;
-                _ -> []
-            end,
-    case Files of
-        [] -> true;
+    case servant_file_proxy:list_dir_all(Dir) of
+        {ok, []} -> true;
         _ -> false
     end.
+
+%% ====================================================================
+%% Tests
+%% ====================================================================
+
+%-ifdef(TEST).
+-include_lib("eunit/include/eunit.hrl").
+
+is_empty_dir_test_() ->
+    {
+     foreach,
+     fun() ->
+             meck:new(servant_file_proxy),
+             ok
+     end,
+     fun(_) ->
+             true = meck:validate(servant_file_proxy),
+             meck:unload(servant_file_proxy)
+     end,
+     [fun(_) -> 
+              Dir = "basedir",
+              DirRet = if
+                           is_list(Files) -> {ok, Files};
+                           true -> Files
+                       end,
+              meck:expect(servant_file_proxy, list_dir_all,
+                          fun (Dir1) when Dir1 == Dir -> DirRet end),
+              ?_assertEqual({Expected, Files}, {is_empty_dir(Dir), Files})
+      end
+      || {Expected, Files} <-
+             [ 
+              {false, ["test1.rar"]},
+              {false, {error, enoent}}, %dir not exists
+              {true, []}
+             ]]
+    }.
+
+%-endif.

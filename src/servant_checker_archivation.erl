@@ -38,10 +38,7 @@ do_subitem(Dir, _CheckResult) ->
 %% @doc Is directory contains any archive?
 %% ====================================================================
 can_be_archived(Dir) ->
-    Files = case servant_file_proxy:list_dir_all(Dir) of
-                {ok, Files2} -> Files2;
-                _ -> []
-            end,
+    Files = servant_file_util:list_dir_all(Dir),
     Func = fun (_, false) -> false;
               (FileName, _Acc) -> not servant_file_util:is_file_archive(FileName)
            end,
@@ -76,29 +73,24 @@ tf_getfiles() -> [
                   {false, ["dir", "test.rar"]},
                   {true, ["dir", "file"]},
                   {false, ["test.rar", "file"]},
-                  {false, {error, enoent}}, %dir not exists
                   {false, []}
                  ].
 
-contains_archive_test_() ->
+can_be_archived_test_() ->
     {
      foreach,
      fun() ->
-             meck:new(servant_file_proxy),
+             meck:new(servant_file_util, [passthrough]),
              ok
      end,
      fun(_) ->
-             true = meck:validate(servant_file_proxy),
-             meck:unload(servant_file_proxy)
+             true = meck:validate(servant_file_util),
+             meck:unload(servant_file_util)
      end,
      [fun(_) -> 
               Dir = tf_getsubdir(),
-              DirRet = if
-                           is_list(Files) -> {ok, Files};
-                           true -> Files
-                       end,
-              meck:expect(servant_file_proxy, list_dir_all,
-                          fun (Dir1) when Dir1 == Dir -> DirRet end),
+              meck:expect(servant_file_util, list_dir_all,
+                          fun (Dir1) when Dir1 == Dir -> Files end),
               ?_assertEqual({Expected, Files}, {can_be_archived(Dir), Files})
       end
       || {Expected, Files} <- tf_getfiles()]

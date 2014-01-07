@@ -9,6 +9,7 @@
 %% ====================================================================
 -export([
          list_dir_subdirs/1,
+         list_dir_all/1,
          is_file_archive/1
         ]).
 
@@ -25,6 +26,15 @@ list_dir_subdirs(Dir) ->
                    end
            end,
     lists:filtermap(Func, Files).
+
+%% ====================================================================
+%% @doc Return directory listing list, or [] on errors
+%% ====================================================================
+list_dir_all(Dir) ->
+    case servant_file_proxy:list_dir_all(Dir) of
+        {ok, Files} -> Files;
+        _ -> []
+    end.
 
 %% ====================================================================
 %% @doc Is filename is archive (by extensions)?
@@ -69,6 +79,35 @@ list_dir_subdirs_test_() ->
               ?_assertEqual(["basedir/dir1", "basedir/dir2"], list_dir_subdirs("basedir"))
       end
      ]
+    }.
+
+list_dir_all_test_() ->
+    {
+     foreach,
+     fun() ->
+             meck:new(servant_file_proxy),
+             ok
+     end,
+     fun(_) ->
+             true = meck:validate(servant_file_proxy),
+             meck:unload(servant_file_proxy)
+     end,
+     [fun(_) -> 
+              Dir = "basedir",
+              DirRet = if
+                           is_list(Files) -> {ok, Files};
+                           true -> Files
+                       end,
+              meck:expect(servant_file_proxy, list_dir_all,
+                          fun (Dir1) when Dir1 == Dir -> DirRet end),
+              ?_assertEqual({Expected, Files}, {list_dir_all(Dir), Files})
+      end
+      || {Expected, Files} <- 
+             [
+              {["dir", "file"], ["dir", "file"]},
+              {[], {error, enoent}}, %dir not exists
+              {[], []}
+             ]]
     }.
 
 is_file_archive_test_() ->

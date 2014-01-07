@@ -27,8 +27,9 @@ get_confirmations(SubDir, _CheckResult) ->
     IOList = io_lib:format("Move from subfolder archive ~s", [DirName]),
     [#confirmation{text=IOList, code={do_save_arched, SubDir}}].
 
-do_subitem(_Dir, CheckResult) ->
-    move_file_to_parent_directory(CheckResult).
+do_subitem(Dir, CheckResult) ->
+    move_file_to_parent_directory(CheckResult),
+    servant_task_queue_manager:in(#task{code={do_remove_empty_dir, Dir}}).
 
 %% ====================================================================
 %% Internal functions

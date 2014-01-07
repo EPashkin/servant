@@ -119,12 +119,12 @@ process_task_dir(_) ->
 process_task_info(Dir, {CodeTag, Module})
   when is_atom(CodeTag) andalso is_atom(Module) ->
     servant_task_queue_manager:in(
-      #taskinfo{text="", code={CodeTag, Dir}, module=Module}),
+      #task{code={CodeTag, Dir}, module=Module}),
     true;
 process_task_info(Dir, CodeTag)
   when is_atom(CodeTag) ->
     servant_task_queue_manager:in(
-      #taskinfo{text="", code={CodeTag, Dir}}),
+      #task{code={CodeTag, Dir}}),
     true;
 process_task_info(_, _) ->
     false.

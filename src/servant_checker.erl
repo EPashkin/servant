@@ -106,9 +106,9 @@ module_exists(Module) ->
 %% ====================================================================
 add_confirmations([])->
     ok;
-add_confirmations([#taskinfo{text=IOList, code=Code, module=Module}|Rest])->
+add_confirmations([#confirmation{text=IOList}=Confirmation | Rest])->
     Text = lists:flatten(IOList),
-    servant:add_confirmation(Text, Code, Module),
+    servant_confirmation_list:add_confirmation(Confirmation#confirmation{text=Text}),
     add_confirmations(Rest).
 
 %% ====================================================================
@@ -122,25 +122,28 @@ add_confirmations_test_() ->
     {
      foreach,
      fun() ->
-             meck:new(servant),
-             meck:expect(servant, add_confirmation, 3, ok),
+             meck:new(servant_confirmation_list),
+             meck:expect(servant_confirmation_list, add_confirmation, 1, ok),
              ok
      end,
      fun(_) ->
-             true = meck:validate(servant),
-             meck:unload(servant)
+             true = meck:validate(servant_confirmation_list),
+             meck:unload(servant_confirmation_list)
      end,
      [
       fun(_) ->
               [
                ?_assertEqual(ok, add_confirmations([])),
-               ?_assertNot(meck:called(servant, get_subitems, ['_', '_', '_']))
+               ?_assertNot(meck:called(servant_confirmation_list, add_confirmation, ['_', '_', '_']))
               ]
       end,
       fun(_) ->
+              Confirmation = #confirmation{text=["Text"], code=code1, module=module1}, 
               [
-               ?_assertEqual(ok, add_confirmations([#taskinfo{text=["Text"], code=code1, module=module1}])),
-               ?_assertNot(meck:called(servant, get_subitems, ["Text", code1, module1]))
+               ?_assertEqual(ok, add_confirmations([Confirmation])),
+               ?_assert(meck:called(servant_confirmation_list, add_confirmation, ['_'])),
+               ?_assert(meck:called(servant_confirmation_list, add_confirmation, 
+                                    [Confirmation#confirmation{text="Text"}]))
               ]
       end
      ]}.

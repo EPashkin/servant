@@ -24,7 +24,7 @@ check_subitem(SubDir) ->
 get_confirmations(SubDir, _CheckResult) ->
     DirName = filename:basename(SubDir),
     IOList = io_lib:format("Remove empty subfolder ~s", [DirName]),
-    [#taskinfo{text=IOList, code={do_remove_empty_dir, SubDir}}].
+    [#confirmation{text=IOList, code={do_remove_empty_dir, SubDir}}].
 
 do_subitem(Dir, _CheckResult) ->
     servant_file_proxy:del_dir(Dir),

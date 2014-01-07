@@ -25,7 +25,7 @@ check_subitem(SubDir) ->
 get_confirmations(SubDir, _CheckResult) ->
     DirName = filename:basename(SubDir),
     IOList = io_lib:format("Move from subfolder archive ~s", [DirName]),
-    [#taskinfo{text=IOList, code={do_save_arched, SubDir}}].
+    [#confirmation{text=IOList, code={do_save_arched, SubDir}}].
 
 do_subitem(_Dir, CheckResult) ->
     move_file_to_parent_directory(CheckResult).
@@ -110,7 +110,7 @@ get_new_file_name_test() ->
 
 get_confirmations_test_() ->
     [
-     ?_assertMatch([#taskinfo{code={do_save_arched,"basedir/dir1"}}],
+     ?_assertMatch([#confirmation{code={do_save_arched,"basedir/dir1"}}],
                    get_confirmations("basedir/dir1", not_used))
     ].
 

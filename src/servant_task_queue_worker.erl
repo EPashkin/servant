@@ -57,7 +57,7 @@ handle_cast(_Msg, State) ->
 handle_info(init, not_inited) ->
     servant_task_queue_manager:get_task(self()),
     {noreply, #state{}};
-handle_info({task, #taskinfo{code=Code, module=Module}=Task}, State) ->
+handle_info({task, #task{code=Code, module=Module}=Task}, State) ->
     Reply = erlang:apply(Module, process_task, [Code]),
     case Reply of
         {timeout, Time} ->
@@ -109,7 +109,7 @@ task_test() ->
     meck:new(test_worker, [non_strict]),
     meck:expect(servant_task_queue_manager, get_task,
                 fun (WorkerPid) ->
-                         WorkerPid!{task, #taskinfo{code=code1, module=test_worker}}
+                         WorkerPid!{task, #task{code=code1, module=test_worker}}
                 end),
     TestPid = self(),
     meck:expect(test_worker, process_task,
@@ -141,7 +141,7 @@ task_timeout_test() ->
     meck:new(test_worker, [non_strict]),
     meck:expect(servant_task_queue_manager, get_task,
                 fun (WorkerPid) ->
-                         WorkerPid!{task, #taskinfo{code=code1, module=test_worker}}
+                         WorkerPid!{task, #task{code=code1, module=test_worker}}
                 end),
     TestPid = self(),
     meck:expect(servant_task_queue_manager, in_after,
@@ -162,7 +162,7 @@ task_timeout_test() ->
              after
                      1000 -> timeout
              end,
-    ?assertMatch({ok, #taskinfo{code=code1}}, Result),
+    ?assertMatch({ok, #task{code=code1}}, Result),
     
     %cleanup
     ok = stop(Pid),

@@ -32,7 +32,7 @@ len() ->
 state() ->
     gen_server:call(?MODULE, state).
 
-in(Task) when is_record(Task, taskinfo) ->
+in(Task) when is_record(Task, task) ->
     in_internal(Task).
 
 in_internal(Task) ->

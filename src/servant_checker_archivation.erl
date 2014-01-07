@@ -25,7 +25,7 @@ check_subitem(SubDir) ->
 get_confirmations(SubDir, _CheckResult) ->
     DirName = filename:basename(SubDir),
     IOList = io_lib:format("Archive subfolder ~s", [DirName]),
-    [#taskinfo{text=IOList, code={do_archivation, SubDir}}].
+    [#confirmation{text=IOList, code={do_archivation, SubDir}}].
 
 do_subitem(Dir, _CheckResult) ->
     archive_directory(Dir).

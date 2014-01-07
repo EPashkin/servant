@@ -12,7 +12,12 @@
 %% API functions
 %% ====================================================================
 -export([start_link/0, stop/0]).
--export([add_confirmation/3, get_confirmations/0, process_confirmation/1]).
+-export([
+         add_confirmation/1,
+         add_confirmation/3,
+         get_confirmations/0,
+         process_confirmation/1
+        ]).
 
 start_link()->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
@@ -21,7 +26,9 @@ stop()->
     gen_server:call(?SERVER, stop).
 
 add_confirmation(Text, Code, Module) ->
-    gen_server:call(?SERVER, {add_confirmation, Text, Code, Module}).
+    add_confirmation(#confirmation{text=Text, code=Code, module=Module}).
+add_confirmation(#confirmation{}=Confirmation) ->
+    gen_server:call(?SERVER, {add_confirmation, Confirmation}).
 
 get_confirmations() ->
     gen_server:call(?SERVER, get_confirmations).
@@ -48,25 +55,25 @@ init([]) ->
 %% ====================================================================
 handle_call(stop, _From, State) ->
     {stop, normal, ok, State};
-handle_call({add_confirmation, Text, Code, Module}, _From, State=#state{list=List}) ->
-    Pred = fun (#taskinfo{code=ItemCode}) -> ItemCode == Code end,
+handle_call({add_confirmation, #confirmation{code=Code}=Confirmation}, _From, State=#state{list=List}) ->
+    Pred = fun (#confirmation{code=ItemCode}) -> ItemCode == Code end,
     NewList = case lists:any(Pred, List) of
                   true -> List;
-                  false->Info = #taskinfo{text=Text, code=Code, module=Module},
-                         [Info|List]
+                  false-> [Confirmation|List]
               end,
     {reply, ok, State#state{list=NewList}};
 handle_call(get_confirmations, _From, State=#state{list=List}) ->
-    ReplyList = [{TaskInfo#taskinfo.text, TaskInfo#taskinfo.code}
-                 || TaskInfo <- List],
+    ReplyList = [{Confirmation#confirmation.text, Confirmation#confirmation.code}
+                 || Confirmation <- List],
     {reply, {ok, lists:reverse(ReplyList)}, State};
 handle_call({process_confirmation, Code}, _From, State=#state{list=List}) ->
     {Reply, NewState} = case find_by_code(Code, List) of
-                false -> {unknown_code, State};
-                #taskinfo{}=Task -> 
-                    servant_task_queue_manager:in(Task), 
-                    {ok, State#state{list=delete_by_code(Code, List)}}    
-            end,
+                            false -> {unknown_code, State};
+                            #confirmation{}=Confirmation -> 
+                                Task = confirmation_to_task(Confirmation),
+                                servant_task_queue_manager:in(Task), 
+                                {ok, State#state{list=delete_by_code(Code, List)}}    
+                        end,
     {reply, Reply, NewState};
 handle_call(_Request, _From, State) ->
     Reply = {error, bad_request},
@@ -110,9 +117,12 @@ code_change(OldVsn, State, _Extra) ->
 %% Internal functions
 %% ====================================================================
 find_by_code(Code, List) ->
-    lists:keyfind(Code, #taskinfo.code, List).
+    lists:keyfind(Code, #confirmation.code, List).
 delete_by_code(Code, List) ->
-    lists:keydelete(Code, #taskinfo.code, List).
+    lists:keydelete(Code, #confirmation.code, List).
+
+confirmation_to_task(#confirmation{code=Code, module=Module}) ->
+    #task{code=Code, module=Module}.
 
 %% ====================================================================
 %% Tests
@@ -167,7 +177,7 @@ add_test_() ->
                        
                        ?assertEqual(ok, process_confirmation(code1)),
                        ?assertEqual({ok,[]}, get_confirmations()), %check remove from list                       
-                       ?assert(meck:called(servant_task_queue_manager, in, [#taskinfo{text='_', code=code1, module=mod}])),
+                       ?assert(meck:called(servant_task_queue_manager, in, [#task{code=code1, module=mod}])),
                        
                        %cleanup
                        true = meck:validate(servant_task_queue_manager),

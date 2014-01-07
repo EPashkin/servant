@@ -1,3 +1,4 @@
 ebin/
 .eunit/
 servant_node*/
+deps/

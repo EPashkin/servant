@@ -85,11 +85,15 @@ c) To generate release:<br>
 ```sh
 rebar generate
 ```
-
-d) To start server:<br>
-on Windows (service currently not working)
+On Windows<br>
+d) To start server in console:<br>
 ```bat
 rel\servant_node\bin\servant_node.cmd console
+```
+e) To start server as service, type in Elevated Command Prompt (Runned as Administrator):
+```bat
+servant_node.cmd install
+servant_node.cmd start
 ```
 
 Contribute

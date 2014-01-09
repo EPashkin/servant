@@ -6,4 +6,5 @@ deps
 *.app
 erl_crash.dump
 servant_node/
+servant_node_w/
 /ebin

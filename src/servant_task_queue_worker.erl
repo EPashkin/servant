@@ -104,7 +104,9 @@ start_stop_test() ->
     ?assertEqual(ok, stop(Pid)),
     ?assertEqual(false, is_process_alive(Pid)).
 
-task_test() ->
+task_test_() ->
+    {timeout, 2,
+    fun()->
     meck:new(servant_task_queue_manager),
     meck:new(test_worker, [non_strict]),
     meck:expect(servant_task_queue_manager, get_task,
@@ -124,8 +126,6 @@ task_test() ->
     {ok, Pid} = start_link(),
     Result = receive
                  {code, Code} -> {ok, Code}
-             after
-                     1000 -> timeout
              end,
     ?assertEqual({ok, code1}, Result),
     
@@ -134,9 +134,13 @@ task_test() ->
     true = meck:validate(test_worker),
     meck:unload(test_worker),
     true = meck:validate(servant_task_queue_manager),
-    meck:unload(servant_task_queue_manager).
+    meck:unload(servant_task_queue_manager),
+    ?_assert(true)
+    end}.
 
-task_timeout_test() ->
+task_timeout_test_() ->
+    {timeout, 2,
+    fun()->
     meck:new(servant_task_queue_manager),
     meck:new(test_worker, [non_strict]),
     meck:expect(servant_task_queue_manager, get_task,
@@ -153,14 +157,12 @@ task_timeout_test() ->
                         %removing expectation for disable recursion
                         meck:expect(servant_task_queue_manager, get_task,
                                     fun (_WorkerPid) -> ok end),
-                        {timeout, 500}
+                        {timeout, 100}
                 end),
     
     {ok, Pid} = start_link(),
     Result = receive
                  {delaying, _Time, Task} -> {ok, Task}
-             after
-                     1000 -> timeout
              end,
     ?assertMatch({ok, #task{code=code1}}, Result),
     
@@ -169,6 +171,8 @@ task_timeout_test() ->
     true = meck:validate(test_worker),
     meck:unload(test_worker),
     true = meck:validate(servant_task_queue_manager),
-    meck:unload(servant_task_queue_manager).
+    meck:unload(servant_task_queue_manager),
+    ?_assert(true)
+    end}.
 
 %-endif.

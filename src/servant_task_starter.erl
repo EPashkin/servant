@@ -178,89 +178,96 @@ process_tasks_test_() ->
 
 init_test_() ->
     {
-     foreach,
+     setup,
      fun() ->
              meck:new(application, [unstick, passthrough]),
-             
              ok
      end,
      fun(_) ->
-             true = meck:validate(application),
              meck:unload(application)
      end,
-     [
-      fun(_) -> %checks defaults
-              meck:expect(application, get_env,
-                          fun
-                             (_App, _Par, Def) -> Def
-                          end),
-              [
-               ?_assertMatch({ok,#state{timeout=?TIMEOUT, tasks=[]}, _}, init([]))
-              ]
-      end, 
-      fun(_) -> %check timeout readed
-              meck:expect(application, get_env,
-                          fun
-                             (_App, 'timeout', _Def) -> 10000;
-                             (_App, _Par, Def) -> Def
-                          end),
-              [
-               ?_assertMatch({ok,#state{timeout=10000}, 10000}, init([])),
-               ?_assert(meck:called(application, get_env, [?APP, 'timeout', '_']))
-              ]
-      end, 
-      fun(_) -> %check not integer timeout
-              meck:expect(application, get_env,
-                          fun
-                             (_App, 'timeout', _Def) -> error;
-                             (_App, _Par, Def) -> Def
-                          end),
-              [
-               ?_assertEqual(get_error_init(), init([]))
-              ]
-      end, 
-      fun(_) -> %check negative timeout
-              meck:expect(application, get_env,
-                          fun
-                             (_App, 'timeout', _Def) -> -1;
-                             (_App, _Par, Def) -> Def
-                          end),
-              [
-               ?_assertEqual(get_error_init(), init([]))
-              ]
-      end, 
-      fun(_) -> %check not positive timeout
-              meck:expect(application, get_env,
-                          fun
-                             (_App, 'timeout', _Def) -> 0;
-                             (_App, _Par, Def) -> Def
-                          end),
-              [
-               ?_assertEqual(get_error_init(), init([]))
-              ]
-      end, 
-      fun(_) -> %check tasks readed
-              meck:expect(application, get_env,
-                          fun
-                             (_App, 'tasks', _Def) -> [{"", []}];
-                             (_App, _Par, Def) -> Def
-                          end),
-              [
-               ?_assertMatch({ok,#state{tasks=[{"",[]}]}, _}, init([])),
-               ?_assert(meck:called(application, get_env, [?APP, 'tasks', '_']))
-              ]
-      end, 
-      fun(_) -> %check bad tasks
-              meck:expect(application, get_env,
-                          fun
-                             (_App, 'tasks', _Def) -> error;
-                             (_App, _Par, Def) -> Def
-                          end),
-              [
-               ?_assertEqual(get_error_init(), init([]))
-              ]
-      end
-     ]
-    }.
+     {
+      foreach,
+      fun() ->
+              ok
+      end,
+      fun(_) ->
+              true = meck:validate(application),
+              meck:reset(application)
+      end,
+      [
+       fun(_) -> %checks defaults
+               meck:expect(application, get_env,
+                           fun
+                              (_App, _Par, Def) -> Def
+                           end),
+               [
+                ?_assertMatch({ok,#state{timeout=?TIMEOUT, tasks=[]}, _}, init([]))
+               ]
+       end, 
+       fun(_) -> %check timeout readed
+               meck:expect(application, get_env,
+                           fun
+                              (_App, 'timeout', _Def) -> 10000;
+                              (_App, _Par, Def) -> Def
+                           end),
+               [
+                ?_assertMatch({ok,#state{timeout=10000}, 10000}, init([])),
+                ?_assert(meck:called(application, get_env, [?APP, 'timeout', '_']))
+               ]
+       end, 
+       fun(_) -> %check not integer timeout
+               meck:expect(application, get_env,
+                           fun
+                              (_App, 'timeout', _Def) -> error;
+                              (_App, _Par, Def) -> Def
+                           end),
+               [
+                ?_assertEqual(get_error_init(), init([]))
+               ]
+       end, 
+       fun(_) -> %check negative timeout
+               meck:expect(application, get_env,
+                           fun
+                              (_App, 'timeout', _Def) -> -1;
+                              (_App, _Par, Def) -> Def
+                           end),
+               [
+                ?_assertEqual(get_error_init(), init([]))
+               ]
+       end, 
+       fun(_) -> %check not positive timeout
+               meck:expect(application, get_env,
+                           fun
+                              (_App, 'timeout', _Def) -> 0;
+                              (_App, _Par, Def) -> Def
+                           end),
+               [
+                ?_assertEqual(get_error_init(), init([]))
+               ]
+       end, 
+       fun(_) -> %check tasks readed
+               meck:expect(application, get_env,
+                           fun
+                              (_App, 'tasks', _Def) -> [{"", []}];
+                              (_App, _Par, Def) -> Def
+                           end),
+               [
+                ?_assertMatch({ok,#state{tasks=[{"",[]}]}, _}, init([])),
+                ?_assert(meck:called(application, get_env, [?APP, 'tasks', '_']))
+               ]
+       end, 
+       fun(_) -> %check bad tasks
+               meck:expect(application, get_env,
+                           fun
+                              (_App, 'tasks', _Def) -> error;
+                              (_App, _Par, Def) -> Def
+                           end),
+               [
+                ?_assertEqual(get_error_init(), init([]))
+               ]
+       end
+      ]
+     }}.
 
 %-endif.

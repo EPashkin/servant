@@ -207,7 +207,7 @@ tf_confirmation_by_code(Code) ->
 
 rechecks_test_() ->
     {
-     foreach,
+     setup,
      fun() ->
              meck:new(servant_checker),
              
@@ -218,32 +218,40 @@ rechecks_test_() ->
              ok
      end,
      fun(_) ->
-             true = meck:validate(servant_checker),
              meck:unload(servant_checker)
      end,
-     [
-      fun(_) -> %is_confirmation_actual
-              [
-               ?_assertMatch({confirmation, _, code1, servant_checker}, #confirmation{code=code1}),
-               ?_assertEqual(true, is_confirmation_actual(#confirmation{code={code1,""}})),
-               ?_assertEqual(false, is_confirmation_actual(#confirmation{code={code2,""}}))
-              ]
+     {
+      foreach,
+      fun() ->
+              ok
       end,
-      fun(_) -> %recheck
-              State = #state{list=[tf_confirmation_by_code(code1), tf_confirmation_by_code(code2)]},
-              [
-               ?_assertEqual(State#state{list=[tf_confirmation_by_code(code1)]},
-                                        recheck(State))
-              ]
+      fun(_) ->
+              true = meck:validate(servant_checker),
+              meck:reset(servant_checker)
       end,
-      fun(_) -> %handle_cast(recheck_confirmations
-              State = #state{list=[tf_confirmation_by_code(code1), tf_confirmation_by_code(code2)]},
-              [
-               ?_assertEqual({noreply, State#state{list=[tf_confirmation_by_code(code1)]}},
-                             handle_cast(recheck_confirmations, State))
-              ]
-      end
-     ]
-    }.
+      [
+       fun(_) -> %is_confirmation_actual
+               [
+                ?_assertMatch({confirmation, _, code1, servant_checker}, #confirmation{code=code1}),
+                ?_assertEqual(true, is_confirmation_actual(#confirmation{code={code1,""}})),
+                ?_assertEqual(false, is_confirmation_actual(#confirmation{code={code2,""}}))
+               ]
+       end,
+       fun(_) -> %recheck
+               State = #state{list=[tf_confirmation_by_code(code1), tf_confirmation_by_code(code2)]},
+               [
+                ?_assertEqual(State#state{list=[tf_confirmation_by_code(code1)]},
+                                         recheck(State))
+               ]
+       end,
+       fun(_) -> %handle_cast(recheck_confirmations
+               State = #state{list=[tf_confirmation_by_code(code1), tf_confirmation_by_code(code2)]},
+               [
+                ?_assertEqual({noreply, State#state{list=[tf_confirmation_by_code(code1)]}},
+                              handle_cast(recheck_confirmations, State))
+               ]
+       end
+      ]
+     }}.
 
 %-endif.

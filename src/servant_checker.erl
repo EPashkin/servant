@@ -168,114 +168,122 @@ add_confirmations_test_() ->
 
 functions_test_() ->
     {
-     foreach,
+     setup,
      fun() ->
              meck:new(servant_checker_test, [non_strict]),
              ok
      end,
      fun(_) ->
-             true = meck:validate(servant_checker_test),
              meck:unload(servant_checker_test)
      end,
-     [
-      fun(_) -> %module_exists
-              [
-               ?_assertEqual(true, module_exists(servant_checker_test)),
-               ?_assertEqual(false, module_exists(servant_checker_test1)),
-               ?_assertEqual(false, module_exists("servant_checker_test"))
-              ]
+     {
+      foreach,
+      fun() ->
+              ok
       end,
-      fun(_) -> %process_oper_module
-              [
-               ?_assertEqual({check, servant_checker_test}, process_oper_module(check, "test")),
-               ?_assertNotMatch({check, _}, process_oper_module(check, "test1"))
-              ]
+      fun(_) ->
+              true = meck:validate(servant_checker_test),
+              meck:reset(servant_checker_test)
       end,
-      fun(_) -> %analyze_code
-              [
-               ?_assertEqual({check, servant_checker_test}, analyze_code(check_test)),
-               ?_assertEqual({do, servant_checker_test}, analyze_code(do_test)),
-               ?_assertEqual(do1_test, analyze_code(do1_test)),
-               ?_assertEqual(servant_checker_test1, analyze_code(do_test1))
-              ]
-      end,
-      fun(_) -> %do_task(check)
-              meck:expect(servant_checker_test, get_subitems, 1, ["basedir/dir1", "basedir/dir2"]),
-              meck:expect(servant_checker_test, check_subitem,
-                          fun ("basedir/dir1") -> "basedir/dir1/dir1.rar"; 
-                             ("basedir/dir2") -> false
-                          end),
-              meck:expect(servant_checker_test, get_confirmations, 2, []),
-              [
-               ?_assertEqual(ok, do_task(check, "basedir", servant_checker_test)),
-               ?_assert(meck:called(servant_checker_test, get_subitems, ["basedir"])),
-               ?_assert(meck:called(servant_checker_test, check_subitem, ["basedir/dir1"])),
-               ?_assert(meck:called(servant_checker_test, check_subitem, ["basedir/dir2"])),
-               ?_assert(meck:called(servant_checker_test, get_confirmations, ["basedir/dir1", "basedir/dir1/dir1.rar"]))
-              ]
-      end,
-      fun(_) -> %do_task(do)
-              meck:expect(servant_checker_test, check_subitem,
-                          fun ("basedir/dir1") -> "basedir/dir1/dir1.rar"; 
-                             ("basedir/dir2") -> false
-                          end),
-              meck:expect(servant_checker_test, get_confirmations, 2, []),
-              meck:expect(servant_checker_test, do_subitem, 2, test),
-              [
-               %with good check
-               ?_assertEqual(test, do_task(do, "basedir/dir1", servant_checker_test)),
-               ?_assert(meck:called(servant_checker_test, check_subitem, ["basedir/dir1"])),
-               ?_assert(meck:called(servant_checker_test, do_subitem, ["basedir/dir1", "basedir/dir1/dir1.rar"])),
-               %with bad check
-               ?_assertEqual(ok, do_task(do, "basedir/dir2", servant_checker_test)),
-               ?_assert(meck:called(servant_checker_test, check_subitem, ["basedir/dir2"])),
-               ?_assertNot(meck:called(servant_checker_test, do_subitem, ["basedir/dir2", '_']))
-              ]
-      end,
-      fun(_) -> %do_check(check)
-              meck:expect(servant_checker_test, check_subitem,
-                          fun ("basedir/dir1") -> "basedir/dir1/dir1.rar"; 
-                             ("basedir/dir2") -> false
-                          end),
-              meck:expect(servant_checker_test, get_confirmations, 2, []),
-              meck:expect(servant_checker_test, do_subitem, 2, test),
-              [
-               ?_assertEqual(true, do_check(check, "", servant_checker_test)),
-               ?_assertNot(meck:called(servant_checker_test, check_subitem, ['_']))
-              ]
-      end,
-      fun(_) -> %do_check(do)
-              meck:expect(servant_checker_test, check_subitem,
-                          fun ("basedir/dir1") -> "basedir/dir1/dir1.rar"; 
-                             ("basedir/dir2") -> false
-                          end),
-              [
-               %with good check
-               ?_assertEqual(true, do_check(do, "basedir/dir1", servant_checker_test)),
-               ?_assert(meck:called(servant_checker_test, check_subitem, ["basedir/dir1"])),
-               %with bad check
-               ?_assertEqual(false, do_check(do, "basedir/dir2", servant_checker_test)),
-               ?_assert(meck:called(servant_checker_test, check_subitem, ["basedir/dir2"]))
-              ]
-      end,
-      fun(_) -> %check_task
-              meck:expect(servant_checker_test, check_subitem,
-                          fun ("basedir/dir1") -> "basedir/dir1/dir1.rar"; 
-                             ("basedir/dir2") -> false
-                          end),
-              [
-               %with good check
-               ?_assertEqual(true, check_task({do_test, "basedir/dir1"})),
-               ?_assert(meck:called(servant_checker_test, check_subitem, ["basedir/dir1"])),
-               %with bad oper check
-               ?_assertEqual(false, check_task({doo_test, "basedir/dir2"})),
-               ?_assertNot(meck:called(servant_checker_test, check_subitem, ["basedir/dir2"])),
-               %with bad args check
-               ?_assertEqual(false, check_task(do_test)),
-               ?_assertNot(meck:called(servant_checker_test, check_subitem, ["basedir/dir2"]))
-              ]
-      end
-     ]
-    }.
+      [
+       fun(_) -> %module_exists
+               [
+                ?_assertEqual(true, module_exists(servant_checker_test)),
+                ?_assertEqual(false, module_exists(servant_checker_test1)),
+                ?_assertEqual(false, module_exists("servant_checker_test"))
+               ]
+       end,
+       fun(_) -> %process_oper_module
+               [
+                ?_assertEqual({check, servant_checker_test}, process_oper_module(check, "test")),
+                ?_assertNotMatch({check, _}, process_oper_module(check, "test1"))
+               ]
+       end,
+       fun(_) -> %analyze_code
+               [
+                ?_assertEqual({check, servant_checker_test}, analyze_code(check_test)),
+                ?_assertEqual({do, servant_checker_test}, analyze_code(do_test)),
+                ?_assertEqual(do1_test, analyze_code(do1_test)),
+                ?_assertEqual(servant_checker_test1, analyze_code(do_test1))
+               ]
+       end,
+       fun(_) -> %do_task(check)
+               meck:expect(servant_checker_test, get_subitems, 1, ["basedir/dir1", "basedir/dir2"]),
+               meck:expect(servant_checker_test, check_subitem,
+                           fun ("basedir/dir1") -> "basedir/dir1/dir1.rar"; 
+                              ("basedir/dir2") -> false
+                           end),
+               meck:expect(servant_checker_test, get_confirmations, 2, []),
+               [
+                ?_assertEqual(ok, do_task(check, "basedir", servant_checker_test)),
+                ?_assert(meck:called(servant_checker_test, get_subitems, ["basedir"])),
+                ?_assert(meck:called(servant_checker_test, check_subitem, ["basedir/dir1"])),
+                ?_assert(meck:called(servant_checker_test, check_subitem, ["basedir/dir2"])),
+                ?_assert(meck:called(servant_checker_test, get_confirmations, ["basedir/dir1", "basedir/dir1/dir1.rar"]))
+               ]
+       end,
+       fun(_) -> %do_task(do)
+               meck:expect(servant_checker_test, check_subitem,
+                           fun ("basedir/dir1") -> "basedir/dir1/dir1.rar"; 
+                              ("basedir/dir2") -> false
+                           end),
+               meck:expect(servant_checker_test, get_confirmations, 2, []),
+               meck:expect(servant_checker_test, do_subitem, 2, test),
+               [
+                %with good check
+                ?_assertEqual(test, do_task(do, "basedir/dir1", servant_checker_test)),
+                ?_assert(meck:called(servant_checker_test, check_subitem, ["basedir/dir1"])),
+                ?_assert(meck:called(servant_checker_test, do_subitem, ["basedir/dir1", "basedir/dir1/dir1.rar"])),
+                %with bad check
+                ?_assertEqual(ok, do_task(do, "basedir/dir2", servant_checker_test)),
+                ?_assert(meck:called(servant_checker_test, check_subitem, ["basedir/dir2"])),
+                ?_assertNot(meck:called(servant_checker_test, do_subitem, ["basedir/dir2", '_']))
+               ]
+       end,
+       fun(_) -> %do_check(check)
+               meck:expect(servant_checker_test, check_subitem,
+                           fun ("basedir/dir1") -> "basedir/dir1/dir1.rar"; 
+                              ("basedir/dir2") -> false
+                           end),
+               meck:expect(servant_checker_test, get_confirmations, 2, []),
+               meck:expect(servant_checker_test, do_subitem, 2, test),
+               [
+                ?_assertEqual(true, do_check(check, "", servant_checker_test)),
+                ?_assertNot(meck:called(servant_checker_test, check_subitem, ['_']))
+               ]
+       end,
+       fun(_) -> %do_check(do)
+               meck:expect(servant_checker_test, check_subitem,
+                           fun ("basedir/dir1") -> "basedir/dir1/dir1.rar"; 
+                              ("basedir/dir2") -> false
+                           end),
+               [
+                %with good check
+                ?_assertEqual(true, do_check(do, "basedir/dir1", servant_checker_test)),
+                ?_assert(meck:called(servant_checker_test, check_subitem, ["basedir/dir1"])),
+                %with bad check
+                ?_assertEqual(false, do_check(do, "basedir/dir2", servant_checker_test)),
+                ?_assert(meck:called(servant_checker_test, check_subitem, ["basedir/dir2"]))
+               ]
+       end,
+       fun(_) -> %check_task
+               meck:expect(servant_checker_test, check_subitem,
+                           fun ("basedir/dir1") -> "basedir/dir1/dir1.rar"; 
+                              ("basedir/dir2") -> false
+                           end),
+               [
+                %with good check
+                ?_assertEqual(true, check_task({do_test, "basedir/dir1"})),
+                ?_assert(meck:called(servant_checker_test, check_subitem, ["basedir/dir1"])),
+                %with bad oper check
+                ?_assertEqual(false, check_task({doo_test, "basedir/dir2"})),
+                ?_assertNot(meck:called(servant_checker_test, check_subitem, ["basedir/dir2"])),
+                %with bad args check
+                ?_assertEqual(false, check_task(do_test)),
+                ?_assertNot(meck:called(servant_checker_test, check_subitem, ["basedir/dir2"]))
+               ]
+       end
+      ]
+     }}.
 
 %-endif.

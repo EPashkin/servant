@@ -5,6 +5,9 @@
 -behaviour(servant_checker).
 -export([get_subitems/1, check_subitem/1, get_confirmations/2, do_subitem/2]).
 
+% for servant_checker_save_arched_bigger
+-export([get_same_archive_in_directory/1, get_new_file_name/1]).
+
 -include("internal.hrl").
 
 %% ====================================================================

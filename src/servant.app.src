@@ -18,6 +18,7 @@
         check_remove_empty_dir,
         check_recheck_confirmations
       ]}
-    ]}
+    ]},
+    {allowed, ["eap_servant_tray"]}
   ]}
  ]}.
